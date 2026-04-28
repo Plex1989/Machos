@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- React & Babel (Permite ejecutar React dentro de HTML) -->
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -25,11 +25,21 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
+        
+        // ¡ROBIN AÑADIDO A LA LISTA!
         const JUGADORES = ["ANDRADE", "ISAI", "VILLEGAS", "ARTURO", "CUTBERTO", "GABRIEL", "LUIS", "ROBIN"];
 
         function App() {
             const [view, setView] = useState('setup'); 
-            const [matches, setMatches] = useState(() => JSON.parse(localStorage.getItem('machos_matches') || '[]'));
+            
+            // CARGA DE HISTORIAL DE VICTORIAS (Evita que se borre al refrescar)
+            const [matches, setMatches] = useState(() => {
+                const guardado = localStorage.getItem('machos_historial_victorias');
+                if (guardado) {
+                    try { return JSON.parse(guardado); } catch(e) { return []; }
+                }
+                return [];
+            });
             
             // Estado Partido
             const [p1, setP1] = useState(null);
@@ -53,6 +63,11 @@
             const [isMuted, setIsMuted] = useState(false); 
             const timerRef = useRef(null);
 
+            // GUARDAR HISTORIAL CADA VEZ QUE HAY UN CAMBIO
+            useEffect(() => {
+                localStorage.setItem('machos_historial_victorias', JSON.stringify(matches));
+            }, [matches]);
+
             // CRONÓMETROS
             useEffect(() => {
                 if (view === 'match' && !winner && !isPaused && !showResetConfirm) {
@@ -70,11 +85,11 @@
                 return () => clearInterval(timerRef.current);
             }, [view, winner, isTimeoutActive, isPaused, showResetConfirm]);
 
-            // SÍNTESIS DE VOZ NATIVA (Sin API Key)
+            // SÍNTESIS DE VOZ NATIVA (Sin necesidad de Internet ni API Keys)
             const announceScore = (s1, s2, isWin = false, winName = "") => {
                 if (isMuted || !window.speechSynthesis) return;
-                window.speechSynthesis.cancel(); // Detiene audios pendientes
-                const text = isWin ? `¡Victoria para ${winName}!` : `Marcador: ${s1} a ${s2}`;
+                window.speechSynthesis.cancel(); 
+                const text = isWin ? `¡Juego para ${winName}!` : `Marcador: ${s1} a ${s2}`;
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'es-MX'; // Español Latino
                 utterance.rate = 1.05;
@@ -132,10 +147,9 @@
 
             const finalize = () => {
                 if (!winner) return;
+                // Al darle a finalizar, guardamos el partido en la memoria permanentemente
                 const newMatch = { id: Date.now(), player1: p1, player2: p2, winner, sets1, sets2, mode, timestamp: Date.now() };
-                const updatedMatches = [...matches, newMatch];
-                setMatches(updatedMatches);
-                localStorage.setItem('machos_matches', JSON.stringify(updatedMatches));
+                setMatches(prev => [...prev, newMatch]);
                 setView('setup');
             };
 
@@ -160,7 +174,7 @@
 
             // --- VISTAS ---
             return (
-                <div className="font-sans select-none bg-black min-h-screen text-slate-100 flex flex-col">
+                <div className="font-sans select-none bg-black min-h-screen text-slate-100 flex flex-col touch-manipulation">
                     
                     {/* HOME / SETUP */}
                     {view === 'setup' && (
