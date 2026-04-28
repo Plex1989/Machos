@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MACHO'S ALPHA | Umpire Pro</title>
     
-    <!-- Tailwind CSS & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -26,15 +24,14 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
         
-        // ¡ROBIN AÑADIDO A LA LISTA!
         const JUGADORES = ["ANDRADE", "ISAI", "VILLEGAS", "ARTURO", "CUTBERTO", "GABRIEL", "LUIS", "ROBIN"];
 
         function App() {
             const [view, setView] = useState('setup'); 
             
-            // CARGA DE HISTORIAL DE VICTORIAS (Evita que se borre al refrescar)
+            // CARGA DE HISTORIAL DE VICTORIAS
             const [matches, setMatches] = useState(() => {
-                const guardado = localStorage.getItem('machos_historial_victorias');
+                const guardado = localStorage.getItem('machos_matches');
                 if (guardado) {
                     try { return JSON.parse(guardado); } catch(e) { return []; }
                 }
@@ -61,11 +58,15 @@
             const [isPaused, setIsPaused] = useState(false);
             const [showResetConfirm, setShowResetConfirm] = useState(false);
             const [isMuted, setIsMuted] = useState(false); 
+            
+            // NUEVO: Estado para el panel de estadísticas del jugador
+            const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
+            
             const timerRef = useRef(null);
 
             // GUARDAR HISTORIAL CADA VEZ QUE HAY UN CAMBIO
             useEffect(() => {
-                localStorage.setItem('machos_historial_victorias', JSON.stringify(matches));
+                localStorage.setItem('machos_matches', JSON.stringify(matches));
             }, [matches]);
 
             // CRONÓMETROS
@@ -85,13 +86,13 @@
                 return () => clearInterval(timerRef.current);
             }, [view, winner, isTimeoutActive, isPaused, showResetConfirm]);
 
-            // SÍNTESIS DE VOZ NATIVA (Sin necesidad de Internet ni API Keys)
+            // SÍNTESIS DE VOZ NATIVA
             const announceScore = (s1, s2, isWin = false, winName = "") => {
                 if (isMuted || !window.speechSynthesis) return;
                 window.speechSynthesis.cancel(); 
                 const text = isWin ? `¡Juego para ${winName}!` : `Marcador: ${s1} a ${s2}`;
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'es-MX'; // Español Latino
+                utterance.lang = 'es-MX'; 
                 utterance.rate = 1.05;
                 window.speechSynthesis.speak(utterance);
             };
@@ -147,9 +148,15 @@
 
             const finalize = () => {
                 if (!winner) return;
-                // Al darle a finalizar, guardamos el partido en la memoria permanentemente
                 const newMatch = { id: Date.now(), player1: p1, player2: p2, winner, sets1, sets2, mode, timestamp: Date.now() };
-                setMatches(prev => [...prev, newMatch]);
+                
+                setMatches(prev => {
+                    const actualizado = [...prev, newMatch];
+                    localStorage.setItem('machos_matches', JSON.stringify(actualizado));
+                    return actualizado;
+                });
+
+                localStorage.removeItem('machos_partido_actual');
                 setView('setup');
             };
 
@@ -163,7 +170,7 @@
             const changeServe = () => { saveState(); setServingFirst(prev => prev === 1 ? 2 : 1); };
             const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, '0')}`;
 
-            // Ranking
+            // Ranking Calculado
             const leaderboard = useMemo(() => {
                 return JUGADORES.map(name => {
                     const pMatches = matches.filter(m => m.player1 === name || m.player2 === name);
@@ -208,36 +215,107 @@
                         </div>
                     )}
 
-                    {/* RANKING */}
+                    {/* RANKING CON EXPEDIENTES DE BATALLA */}
                     {view === 'ranking' && (
                         <div className="p-6 pb-20 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar">
                             <button onClick={() => setView('setup')} className="mb-8 text-zinc-500 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2"><i className="fa-solid fa-chevron-left"></i> Volver al Home</button>
                             <h2 className="text-4xl font-black italic mb-2 uppercase tracking-tighter text-white">MACHO'S ALPHA</h2>
-                            <p className="text-[#C61A23] text-xs font-black tracking-widest mb-8 uppercase">Leaderboard Global</p>
+                            <p className="text-[#C61A23] text-xs font-black tracking-widest mb-4 uppercase">Leaderboard Global</p>
+                            <p className="text-zinc-600 text-[9px] font-bold uppercase mb-8"><i className="fa-solid fa-hand-pointer mr-1"></i> Toca un jugador para ver su historial</p>
                             
                             <div className="space-y-3">
-                                    {leaderboard.map((s, i) => (
-                                        <div key={s.name} className={`flex items-center p-5 rounded-3xl border ${i === 0 ? 'bg-[#C61A23]/20 border-[#C61A23]/50' : 'bg-zinc-900 border-white/5'}`}>
-                                            <span className={`w-8 font-black ${i === 0 ? 'text-[#C61A23]' : 'text-zinc-600'}`}>{i+1}</span>
-                                            <div className="flex-1 px-4">
-                                                <p className="font-black text-sm uppercase text-white">{s.name}</p>
-                                                <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">{s.wins} Ganados / {s.total} Partidos</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-2xl font-black leading-none text-white">{Math.round(s.rate)}%</span>
-                                                <p className="text-[8px] text-zinc-600 font-bold uppercase">Win Rate</p>
-                                            </div>
+                                {leaderboard.map((s, i) => (
+                                    <div key={s.name} onClick={() => setSelectedPlayerStats(s.name)} className={`flex items-center p-5 rounded-3xl border cursor-pointer active:scale-95 transition-transform ${i === 0 ? 'bg-[#C61A23]/20 border-[#C61A23]/50' : 'bg-zinc-900 border-white/5'}`}>
+                                        <span className={`w-8 font-black ${i === 0 ? 'text-[#C61A23]' : 'text-zinc-600'}`}>{i+1}</span>
+                                        <div className="flex-1 px-4">
+                                            <p className="font-black text-sm uppercase text-white">{s.name}</p>
+                                            <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">{s.wins} Ganados / {s.total} Partidos</p>
                                         </div>
-                                    ))}
+                                        <div className="text-right">
+                                            <span className="text-2xl font-black leading-none text-white">{Math.round(s.rate)}%</span>
+                                            <p className="text-[8px] text-zinc-600 font-bold uppercase">Win Rate</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    {/* MARCADOR DEL PARTIDO (ADAPTADO A TABLET Y MÓVIL) */}
+                    {/* MODAL DE HISTORIAL DEL JUGADOR */}
+                    {selectedPlayerStats && (() => {
+                        // Filtramos todos los partidos donde participó el jugador y los ordenamos del más nuevo al más viejo
+                        const pMatches = matches
+                            .filter(m => m.player1 === selectedPlayerStats || m.player2 === selectedPlayerStats)
+                            .sort((a,b) => b.timestamp - a.timestamp);
+                        
+                        const wins = pMatches.filter(m => m.winner === selectedPlayerStats).length;
+                        const losses = pMatches.length - wins;
+
+                        return (
+                            <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[700] flex flex-col p-6 overflow-y-auto animate-in slide-in-from-bottom duration-300">
+                                <button onClick={() => setSelectedPlayerStats(null)} className="absolute top-6 right-6 w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform">
+                                    <i className="fa-solid fa-xmark text-xl"></i>
+                                </button>
+
+                                <h2 className="text-5xl font-black italic text-white uppercase mt-12 mb-2 tracking-tighter">{selectedPlayerStats}</h2>
+                                <p className="text-[#C61A23] font-black tracking-[0.3em] text-[10px] uppercase mb-8">Expediente de Batallas</p>
+
+                                <div className="flex gap-4 mb-8">
+                                    <div className="flex-1 bg-zinc-900 rounded-[20px] p-5 text-center border border-white/5 shadow-lg">
+                                        <p className="text-[10px] text-zinc-500 font-bold uppercase mb-2">Victorias</p>
+                                        <p className="text-4xl font-black text-green-500">{wins}</p>
+                                    </div>
+                                    <div className="flex-1 bg-zinc-900 rounded-[20px] p-5 text-center border border-white/5 shadow-lg">
+                                        <p className="text-[10px] text-zinc-500 font-bold uppercase mb-2">Derrotas</p>
+                                        <p className="text-4xl font-black text-red-500">{losses}</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-zinc-900 rounded-[30px] p-6 border border-white/5 flex-1 shadow-xl">
+                                    <h3 className="text-white font-black uppercase tracking-widest text-xs mb-6 border-b border-white/10 pb-4">Últimos Partidos</h3>
+                                    
+                                    <table className="w-full text-left text-xs">
+                                        <thead>
+                                            <tr className="text-zinc-500">
+                                                <th className="pb-4 font-bold uppercase tracking-widest text-[9px]">Fecha</th>
+                                                <th className="pb-4 font-bold uppercase tracking-widest text-[9px]">Rival</th>
+                                                <th className="pb-4 text-right font-bold uppercase tracking-widest text-[9px]">Resultado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pMatches.length === 0 ? (
+                                                <tr><td colSpan="3" className="py-8 text-center text-zinc-600 font-bold italic">Sin registros en la base de datos</td></tr>
+                                            ) : (
+                                                pMatches.map(m => {
+                                                    const isWin = m.winner === selectedPlayerStats;
+                                                    const rival = m.player1 === selectedPlayerStats ? m.player2 : m.player1;
+                                                    // Formato: "15 oct"
+                                                    const dateStr = new Date(m.timestamp).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+                                                    
+                                                    return (
+                                                        <tr key={m.id} className="border-b border-white/5 last:border-0">
+                                                            <td className="py-4 font-mono text-zinc-400">{dateStr}</td>
+                                                            <td className="py-4 font-black text-white">{rival}</td>
+                                                            <td className="py-4 text-right">
+                                                                <span className={`px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest ${isWin ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                                    {isWin ? 'Victoria' : 'Derrota'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )
+                    })()}
+
+                    {/* MARCADOR DEL PARTIDO */}
                     {view === 'match' && (
                         <div className="fixed inset-0 bg-[#f2f2f2] flex flex-col z-50 overflow-hidden">
                             
-                            {/* Top Bar */}
                             <div className="bg-black py-2 px-4 flex justify-between items-center text-white shrink-0 shadow-md relative z-20">
                                 <button onClick={() => setView('setup')} className="text-zinc-400 font-bold text-[10px] flex items-center gap-1 uppercase tracking-widest">
                                     <i className="fa-solid fa-chevron-left"></i> Salir
@@ -248,7 +326,6 @@
                                 </button>
                             </div>
 
-                            {/* Área principal: flex-col en móvil, flex-row en tablet */}
                             <div className="flex-1 flex flex-col md:flex-row w-full p-2 md:p-4 gap-2 md:gap-4">
 
                                 {/* SECCIÓN JUGADOR 1 */}
@@ -306,7 +383,7 @@
                                 </div>
                             </div>
 
-                            {/* OVERLAYS MODALES */}
+                            {/* OVERLAYS MODALES PARTIDO */}
                             {isTimeoutActive && (
                                 <div className="fixed inset-0 bg-[#C61A23]/98 backdrop-blur-md z-[500] flex flex-col items-center justify-center p-10 text-white animate-in zoom-in">
                                     <i className="fa-solid fa-stopwatch text-6xl mb-6 opacity-90"></i>
