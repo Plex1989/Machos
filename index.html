@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MACHO'S ALPHA | Umpire Pro v4.0</title>
+    <title>MACHO'S ALPHA | Umpire Pro v4.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,11 +18,10 @@
     
     <style>
         body { 
-            /* Fondo base oscuro con ligeros gradientes como en la imagen */
             background-color: #0b0c10;
             background-image: 
-                radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.05), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(217, 70, 239, 0.05), transparent 25%);
+                radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.08), transparent 30%),
+                radial-gradient(circle at 85% 30%, rgba(217, 70, 239, 0.08), transparent 30%);
             color: white; 
             font-family: 'Montserrat', sans-serif;
             -webkit-tap-highlight-color: transparent; 
@@ -34,20 +33,17 @@
         
         .font-digital { font-family: 'Orbitron', sans-serif; }
         
-        /* Paneles estilo Glass oscuro */
         .glass-dark { 
             background: rgba(15, 17, 26, 0.7); 
             backdrop-filter: blur(16px); 
             -webkit-backdrop-filter: blur(16px); 
-            border: 1px solid rgba(255, 255, 255, 0.03); 
         }
         
-        /* Efecto de línea de neón en las tarjetas */
         .card-neon { position: relative; overflow: hidden; transition: all 0.3s ease; }
-        .card-neon-cyan { border: 1px solid rgba(6, 182, 212, 0.3); background: rgba(6, 182, 212, 0.05); box-shadow: 0 0 25px rgba(6, 182, 212, 0.15); }
+        .card-neon-cyan { border: 1px solid rgba(6, 182, 212, 0.5); background: rgba(6, 182, 212, 0.1); box-shadow: 0 0 25px rgba(6, 182, 212, 0.3); }
         .card-neon-cyan::before { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; background: #06b6d4; box-shadow: 0 0 10px #06b6d4, 0 0 20px #06b6d4; }
         
-        .card-neon-fuchsia { border: 1px solid rgba(217, 70, 239, 0.3); background: rgba(217, 70, 239, 0.05); box-shadow: 0 0 25px rgba(217, 70, 239, 0.15); }
+        .card-neon-fuchsia { border: 1px solid rgba(217, 70, 239, 0.5); background: rgba(217, 70, 239, 0.1); box-shadow: 0 0 25px rgba(217, 70, 239, 0.3); }
         .card-neon-fuchsia::before { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; background: #d946ef; box-shadow: 0 0 10px #d946ef, 0 0 20px #d946ef; }
     </style>
 </head>
@@ -308,36 +304,37 @@
                         <div className="p-6 pb-24 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar h-screen relative">
                             
                             <header className="text-center mb-10 pt-10 relative flex flex-col items-center">
-                                {/* Efecto de luz de fondo detrás del logo */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-cyan-500/20 rounded-full blur-[60px] z-0"></div>
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/4 -translate-y-1/4 w-32 h-32 bg-fuchsia-500/20 rounded-full blur-[50px] z-0"></div>
+                                {/* LUCES TRASERAS DEL LOGO (NUEVO RESPLANDOR) */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white/10 rounded-full blur-[30px] z-0"></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/20 rounded-full blur-[50px] z-0"></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/4 -translate-y-1/4 w-56 h-56 bg-fuchsia-500/20 rounded-full blur-[50px] z-0"></div>
                                 
-                                {/* AQUI VA TU LOGO (Reemplaza el src con la URL de tu GitHub o deja logo-machos.png si está en la misma carpeta) */}
+                                {/* LOGO CON FILTRO DROP-SHADOW PARA ILUMINAR EL CONTORNO */}
                                 <img 
                                     src="./logo-machos.png" 
                                     alt="Macho's Alpha Logo" 
-                                    className="w-56 object-contain relative z-10 mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" 
+                                    className="w-56 object-contain relative z-10 mb-4"
+                                    style={{ filter: 'drop-shadow(0px 0px 15px rgba(255,255,255,0.4)) drop-shadow(0px 0px 30px rgba(6,182,212,0.3))' }}
                                     onError={(e) => { e.target.style.display='none'; document.getElementById('fallback-title').style.display='block'; }}
                                 />
                                 
-                                {/* Este título de texto solo aparece si el logo no carga */}
                                 <h1 id="fallback-title" className="text-5xl font-black text-white italic tracking-tighter leading-none uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] hidden relative z-10">
                                     MACHO'S<br/><span className="text-cyan-400">ALPHA</span>
                                 </h1>
                                 
-                                <p className="text-cyan-300 text-[11px] font-bold tracking-[0.3em] uppercase font-digital relative z-10 mt-2">Torneo de Ping Pong</p>
+                                <p className="text-cyan-300 text-[11px] font-bold tracking-[0.3em] uppercase font-digital relative z-10 mt-2 shadow-black">Torneo de Ping Pong</p>
                             </header>
 
                             <div className="space-y-8 relative z-10">
                                 {/* JUGADOR 1 (CYAN TEMA) */}
                                 <div>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 1</p>
+                                    <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 1</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         {JUGADORES.map(n => 
                                             <button 
                                                 key={n} 
                                                 onClick={() => setP1(n)} 
-                                                className={`py-4 rounded-xl font-bold text-xs card-neon ${p1 === n ? 'card-neon-cyan text-white' : 'glass-dark text-zinc-500 hover:text-zinc-300 border-transparent hover:border-white/10'}`}
+                                                className={`py-4 rounded-xl font-bold text-xs card-neon transition-all duration-300 ${p1 === n ? 'card-neon-cyan text-white scale-105' : 'glass-dark border border-cyan-500/30 text-zinc-300 shadow-[0_0_10px_rgba(6,182,212,0.15)] hover:border-cyan-400/60 hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:text-white'}`}
                                             >
                                                 <span className="relative z-10 flex items-center justify-center gap-2">
                                                     {p1 === n && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_5px_#06b6d4]"></div>}
@@ -350,13 +347,13 @@
 
                                 {/* JUGADOR 2 (FUCHSIA TEMA) */}
                                 <div>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 2</p>
+                                    <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 2</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         {JUGADORES.map(n => 
                                             <button 
                                                 key={n} 
                                                 onClick={() => setP2(n)} 
-                                                className={`py-4 rounded-xl font-bold text-xs card-neon ${p2 === n ? 'card-neon-fuchsia text-white' : 'glass-dark text-zinc-500 hover:text-zinc-300 border-transparent hover:border-white/10'}`}
+                                                className={`py-4 rounded-xl font-bold text-xs card-neon transition-all duration-300 ${p2 === n ? 'card-neon-fuchsia text-white scale-105' : 'glass-dark border border-fuchsia-500/30 text-zinc-300 shadow-[0_0_10px_rgba(217,70,239,0.15)] hover:border-fuchsia-400/60 hover:shadow-[0_0_15px_rgba(217,70,239,0.4)] hover:text-white'}`}
                                             >
                                                 <span className="relative z-10 flex items-center justify-center gap-2">
                                                     {p2 === n && <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_5px_#d946ef]"></div>}
@@ -373,14 +370,14 @@
                                         <button 
                                             key={m} 
                                             onClick={() => setMode(m)} 
-                                            className={`flex-1 py-3 rounded-xl font-bold text-[9px] tracking-widest uppercase transition-all ${mode === m ? 'bg-white/10 border border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'glass-dark text-zinc-600 border-transparent'}`}
+                                            className={`flex-1 py-3 rounded-xl font-bold text-[9px] tracking-widest uppercase transition-all duration-300 ${mode === m ? 'bg-white/10 border border-white/50 text-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105' : 'glass-dark border border-white/20 text-zinc-400 shadow-[0_0_10px_rgba(255,255,255,0.05)] hover:border-white/40 hover:text-white'}`}
                                         >
                                             {m === '1-15' ? '1 a 15' : `De ${m.split('-')[1]}`}
                                         </button>
                                     )}
                                 </div>
 
-                                <button disabled={!p1 || !p2 || p1 === p2} onClick={startMatchWithAudio} className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] mt-6 disabled:opacity-20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                <button disabled={!p1 || !p2 || p1 === p2} onClick={startMatchWithAudio} className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_0_25px_rgba(255,255,255,0.5)] mt-6 disabled:opacity-20 disabled:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
                                     Comenzar Duelo
                                 </button>
                                 
@@ -399,11 +396,11 @@
                             
                             <div className="space-y-3 mt-8">
                                 {leaderboard.map((s, i) => (
-                                    <div key={s.name} onClick={() => setSelectedPlayerStats(s.name)} className={`flex items-center p-5 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] ${i === 0 ? 'card-neon-cyan border-cyan-500/50' : 'glass-dark hover:border-white/10'}`}>
-                                        <span className={`w-8 font-black font-digital text-xl ${i === 0 ? 'text-cyan-400' : 'text-zinc-600'}`}>{i+1}</span>
-                                        <div className="flex-1 px-4 border-l border-white/5 ml-2 pl-4">
+                                    <div key={s.name} onClick={() => setSelectedPlayerStats(s.name)} className={`flex items-center p-5 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] ${i === 0 ? 'card-neon-cyan border-cyan-500/50' : 'glass-dark border border-white/5 hover:border-white/20'}`}>
+                                        <span className={`w-8 font-black font-digital text-xl ${i === 0 ? 'text-cyan-400' : 'text-zinc-500'}`}>{i+1}</span>
+                                        <div className="flex-1 px-4 border-l border-white/10 ml-2 pl-4">
                                             <p className="font-bold text-sm uppercase text-white tracking-widest">{s.name}</p>
-                                            <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">{s.wins} Ganados / {s.total} Total</p>
+                                            <p className="text-[9px] text-zinc-400 font-bold uppercase mt-1">{s.wins} Ganados / {s.total} Total</p>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-xl font-black leading-none text-white font-digital">{Math.round(s.rate)}<span className="text-[10px] text-zinc-500">%</span></span>
@@ -421,7 +418,7 @@
 
                         return (
                             <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[700] flex flex-col p-6 overflow-y-auto animate-in slide-in-from-bottom duration-300">
-                                <button onClick={() => setSelectedPlayerStats(null)} className="absolute top-6 right-6 w-12 h-12 glass-dark rounded-full flex items-center justify-center text-white border border-white/10 hover:bg-white/5">
+                                <button onClick={() => setSelectedPlayerStats(null)} className="absolute top-6 right-6 w-12 h-12 glass-dark rounded-full flex items-center justify-center text-white border border-white/10 hover:bg-white/10 transition-colors">
                                     <i className="fa-solid fa-xmark text-xl"></i>
                                 </button>
                                 <h2 className="text-4xl font-black italic text-white uppercase mt-16 mb-2 tracking-widest">{selectedPlayerStats}</h2>
@@ -481,11 +478,11 @@
 
                                 {/* CONTROLES CENTRALES */}
                                 <div className="flex flex-row landscape:flex-col items-center justify-center gap-4 shrink-0 py-1 landscape:py-0 z-20">
-                                    <button onClick={undo} className="w-12 h-12 landscape:w-14 landscape:h-14 glass-dark border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 transition-all"><i className="fa-solid fa-rotate-left text-lg"></i></button>
-                                    <button onClick={() => { saveState(); setSwapped(prev => !prev); }} className="w-12 h-12 landscape:w-14 landscape:h-14 glass-dark border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 transition-all"><i className="fa-solid fa-shuffle text-lg"></i></button>
-                                    <button onClick={changeServe} className="w-12 h-12 landscape:w-14 landscape:h-14 glass-dark border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 transition-all"><i className="fa-solid fa-right-left text-lg"></i></button>
-                                    <button onClick={startTimeout} className="w-12 h-12 landscape:w-14 landscape:h-14 bg-white/10 border border-white/30 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"><i className="fa-solid fa-stopwatch text-lg"></i></button>
-                                    <button onClick={() => setShowResetConfirm(true)} className="w-12 h-12 landscape:w-14 landscape:h-14 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center text-rose-500 hover:bg-rose-500/20 transition-all"><i className="fa-solid fa-power-off text-lg"></i></button>
+                                    <button onClick={undo} className="w-12 h-12 landscape:w-14 landscape:h-14 glass-dark border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"><i className="fa-solid fa-rotate-left text-lg"></i></button>
+                                    <button onClick={() => { saveState(); setSwapped(prev => !prev); }} className="w-12 h-12 landscape:w-14 landscape:h-14 glass-dark border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"><i className="fa-solid fa-shuffle text-lg"></i></button>
+                                    <button onClick={changeServe} className="w-12 h-12 landscape:w-14 landscape:h-14 glass-dark border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"><i className="fa-solid fa-right-left text-lg"></i></button>
+                                    <button onClick={startTimeout} className="w-12 h-12 landscape:w-14 landscape:h-14 bg-white/10 border border-white/30 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]"><i className="fa-solid fa-stopwatch text-lg"></i></button>
+                                    <button onClick={() => setShowResetConfirm(true)} className="w-12 h-12 landscape:w-14 landscape:h-14 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center text-rose-500 hover:bg-rose-500/20 hover:border-rose-500/50 hover:shadow-[0_0_15px_rgba(225,29,72,0.3)] transition-all"><i className="fa-solid fa-power-off text-lg"></i></button>
                                 </div>
 
                                 {/* JUGADOR 2 (FUCHSIA NEÓN) */}
@@ -527,10 +524,10 @@
                                     <div className="glass-dark border border-white/10 p-10 rounded-[30px] max-w-sm w-full flex flex-col items-center">
                                         <i className="fa-solid fa-triangle-exclamation text-4xl mb-6 text-rose-500"></i>
                                         <h3 className="text-xl font-bold uppercase tracking-widest mb-3 text-center">¿Juego Nuevo?</h3>
-                                        <p className="text-zinc-500 text-xs text-center mb-10">El progreso actual se perderá.</p>
+                                        <p className="text-zinc-400 text-xs text-center mb-10">El progreso actual se perderá.</p>
                                         <div className="flex gap-4 w-full">
-                                            <button onClick={() => setShowResetConfirm(false)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors">Cancelar</button>
-                                            <button onClick={resetMatch} className="flex-1 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-400 py-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors">Reiniciar</button>
+                                            <button onClick={() => setShowResetConfirm(false)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/20 text-white py-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors">Cancelar</button>
+                                            <button onClick={resetMatch} className="flex-1 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-400 py-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-[0_0_15px_rgba(225,29,72,0.2)]">Reiniciar</button>
                                         </div>
                                     </div>
                                 </div>
@@ -541,11 +538,11 @@
                                     <div className="w-24 h-24 rounded-full bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
                                         <i className="fa-solid fa-trophy text-4xl text-cyan-400"></i>
                                     </div>
-                                    <p className="text-zinc-500 font-bold uppercase tracking-[0.4em] text-[10px] mb-4">Victoria Confirmada</p>
+                                    <p className="text-zinc-400 font-bold uppercase tracking-[0.4em] text-[10px] mb-4">Victoria Confirmada</p>
                                     <h2 className="text-[8vh] font-black text-white mb-16 uppercase tracking-widest leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{winner}</h2>
                                     <div className="flex flex-col landscape:flex-row w-full gap-4 max-w-sm">
                                         <button onClick={finalize} className="flex-1 bg-white text-black py-5 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.2)] text-xs">Guardar Stats</button>
-                                        <button onClick={undo} className="flex-1 glass-dark border border-white/10 text-zinc-400 py-5 rounded-xl font-bold uppercase tracking-widest text-xs hover:text-white transition-colors">Revertir Error</button>
+                                        <button onClick={undo} className="flex-1 glass-dark border border-white/20 text-zinc-300 py-5 rounded-xl font-bold uppercase tracking-widest text-xs hover:text-white hover:border-white/40 transition-colors">Revertir Error</button>
                                     </div>
                                 </div>
                             )}
