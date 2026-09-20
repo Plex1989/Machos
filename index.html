@@ -89,6 +89,61 @@
                 return () => clearInterval(timerRef.current);
             }, [view, winner, isTimeoutActive, isPaused, showResetConfirm]);
 
+            // ==========================================
+            // CONTROL CON ANILLO BLUETOOTH / TECLADO
+            // ==========================================
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    // Si no estamos en la pantalla del partido o hay un menú abierto, lo ignoramos
+                    if (view !== 'match' || winner || showResetConfirm) return;
+
+                    // Evita que la pantalla de la tablet se mueva hacia arriba o abajo
+                    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','PageUp','PageDown'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+
+                    switch(e.key) {
+                        // BOTÓN IZQUIERDO (Regresar canción) -> Suma punto Jugador 1
+                        case 'ArrowLeft':
+                        case 'MediaTrackPrevious':
+                        case 'MediaRewind':
+                            if (!isPaused) addPoint(1);
+                            break;
+                            
+                        // BOTÓN DERECHO (Adelantar canción) -> Suma punto Jugador 2
+                        case 'ArrowRight':
+                        case 'MediaTrackNext':
+                        case 'MediaFastForward':
+                            if (!isPaused) addPoint(2);
+                            break;
+                            
+                        // BOTÓN ABAJO (Scroll Down) -> Deshace el último punto
+                        case 'ArrowDown':
+                        case 'PageDown':
+                            if (!isPaused) undo();
+                            break;
+
+                        // BOTÓN ARRIBA (Scroll Up) -> Lanza el tiempo fuera (Timeout)
+                        case 'ArrowUp':
+                        case 'PageUp':
+                            if (!isPaused) startTimeout();
+                            break;
+
+                        // DOBLE TOQUE (Play/Pause) -> Pausa o Reanuda el partido
+                        case 'MediaPlayPause':
+                        case 'Pause':
+                        case 'Enter':
+                        case ' ': // Espacio
+                            setIsPaused(prev => !prev);
+                            break;
+                    }
+                };
+
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }); 
+            // ==========================================
+
             // SÍNTESIS DE VOZ NATIVA
             const announceScore = (s1, s2, isWin = false, winName = "") => {
                 if (isMuted || !window.speechSynthesis) return;
