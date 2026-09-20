@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MACHO'S ALPHA | Umpire Pro v6.1</title>
+    <title>MACHO'S ALPHA | Umpire Pro v7.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -79,11 +79,26 @@
     <script type="text/babel" data-type="module">
         const { useState, useEffect, useMemo, useRef } = React;
         
-        const JUGADORES = ["ANDRADE", "ISAI", "VILLEGAS", "ARTURO", "CUTBERTO", "GABRIEL", "LUIS", "ROBIN"];
+        // ORDEN ACTUALIZADO: Los primeros 4 siempre serán fijos
+        const DEFAULT_PLAYERS = ["ANDRADE", "ISAI", "ARTURO", "VILLEGAS", "CUTBERTO", "GABRIEL", "LUIS", "ROBIN"];
 
         function App() {
             const [view, setView] = useState('setup'); 
             
+            // ESTADO DE JUGADORES
+            const [players, setPlayers] = useState(() => {
+                const saved = localStorage.getItem('machos_players');
+                let loaded = DEFAULT_PLAYERS;
+                if (saved) {
+                    try { loaded = JSON.parse(saved); } catch(e) {}
+                }
+                // Forzamos que los primeros 4 siempre sean los fijos, sin importar qué se haya guardado antes
+                return loaded.map((p, i) => i < 4 ? DEFAULT_PLAYERS[i] : p);
+            });
+
+            const [isEditingPlayers, setIsEditingPlayers] = useState(false);
+            const [tempPlayers, setTempPlayers] = useState([]);
+
             const [matches, setMatches] = useState(() => {
                 const guardado = localStorage.getItem('machos_matches');
                 if (guardado) {
@@ -314,23 +329,20 @@
             const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, '0')}`;
 
             const leaderboard = useMemo(() => {
-                return JUGADORES.map(name => {
+                return players.map(name => {
                     const pMatches = matches.filter(m => m.player1 === name || m.player2 === name);
                     const wins = pMatches.filter(m => m.winner === name).length;
                     return { name, wins, total: pMatches.length, rate: pMatches.length ? (wins/pMatches.length)*100 : 0 };
                 }).sort((a,b) => b.rate - a.rate || b.wins - a.wins);
-            }, [matches]);
+            }, [matches, players]);
 
-            // ==========================================
-            // LOGICA PARA FRENTE A FRENTE DIARIO
-            // ==========================================
             const getDailyH2H = () => {
                 if (!p1 || !p2) return { p1Wins: 0, p2Wins: 0 };
                 const today = new Date().toDateString();
                 const dailyMatches = matches.filter(m => 
                     ((m.player1 === p1 && m.player2 === p2) || (m.player1 === p2 && m.player2 === p1)) &&
                     new Date(m.timestamp).toDateString() === today &&
-                    !m.hiddenFromDaily // Solo toma en cuenta los que NO han sido reseteados
+                    !m.hiddenFromDaily 
                 );
                 return {
                     p1Wins: dailyMatches.filter(m => m.winner === p1).length,
@@ -345,12 +357,47 @@
                         const isMatchBetweenThem = (m.player1 === p1 && m.player2 === p2) || (m.player1 === p2 && m.player2 === p1);
                         const isToday = new Date(m.timestamp).toDateString() === today;
                         if (isMatchBetweenThem && isToday) {
-                            return { ...m, hiddenFromDaily: true }; // Se ocultan del popup, pero siguen existiendo en All-time
+                            return { ...m, hiddenFromDaily: true }; 
                         }
                         return m;
                     });
                     return updated;
                 });
+            };
+
+            // ==========================================
+            // GUARDAR EDICIÓN DE JUGADORES
+            // ==========================================
+            const savePlayers = () => {
+                const newPlayers = tempPlayers.map((p, i) => {
+                    // Prevenir que los primeros 4 cambien, sin importar qué
+                    if (i < 4) return DEFAULT_PLAYERS[i];
+                    return p.trim() ? p.trim().toUpperCase() : players[i];
+                });
+                
+                let matchesUpdated = false;
+                const updatedMatches = matches.map(m => {
+                    let newM = { ...m };
+                    players.forEach((oldName, i) => {
+                        const newName = newPlayers[i];
+                        if (oldName !== newName) {
+                            if (newM.player1 === oldName) { newM.player1 = newName; matchesUpdated = true; }
+                            if (newM.player2 === oldName) { newM.player2 = newName; matchesUpdated = true; }
+                            if (newM.winner === oldName) { newM.winner = newName; matchesUpdated = true; }
+                        }
+                    });
+                    return newM;
+                });
+
+                if (matchesUpdated) {
+                    setMatches(updatedMatches);
+                }
+
+                setPlayers(newPlayers);
+                localStorage.setItem('machos_players', JSON.stringify(newPlayers));
+                setIsEditingPlayers(false);
+                setP1(null);
+                setP2(null);
             };
 
             return (
@@ -364,13 +411,19 @@
                     {view === 'setup' && (
                         <div className="p-6 pb-24 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar h-screen relative">
                             
+                            {/* BOTÓN DE EDITAR JUGADORES */}
+                            <button 
+                                onClick={() => { setTempPlayers([...players]); setIsEditingPlayers(true); }} 
+                                className="absolute top-6 right-6 text-zinc-600 hover:text-cyan-400 transition-colors z-50 p-2"
+                            >
+                                <i className="fa-solid fa-pen-to-square text-xl"></i>
+                            </button>
+
                             <header className="text-center mb-10 pt-10 relative flex flex-col items-center">
-                                {/* LUCES TRASERAS DEL LOGO */}
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white/10 rounded-full blur-[30px] z-0"></div>
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/20 rounded-full blur-[50px] z-0"></div>
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/4 -translate-y-1/4 w-56 h-56 bg-fuchsia-500/20 rounded-full blur-[50px] z-0"></div>
                                 
-                                {/* LOGO */}
                                 <img 
                                     src="./logo-machos.png" 
                                     alt="Macho's Alpha Logo" 
@@ -390,7 +443,7 @@
                                 <div>
                                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 1</p>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {JUGADORES.map(n => 
+                                        {players.map(n => 
                                             <button key={n} onClick={() => setP1(n)} className={`py-4 rounded-xl font-bold text-xs btn-3d ${p1 === n ? 'btn-cyan' : 'btn-off hover:bg-slate-700 hover:text-white'}`}>
                                                 {n}
                                             </button>
@@ -401,7 +454,7 @@
                                 <div>
                                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 2</p>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {JUGADORES.map(n => 
+                                        {players.map(n => 
                                             <button key={n} onClick={() => setP2(n)} className={`py-4 rounded-xl font-bold text-xs btn-3d ${p2 === n ? 'btn-fuchsia' : 'btn-off hover:bg-slate-700 hover:text-white'}`}>
                                                 {n}
                                             </button>
@@ -428,6 +481,50 @@
                         </div>
                     )}
 
+                    {/* ==========================================
+                        MODAL EDITAR JUGADORES
+                        ========================================== */}
+                    {isEditingPlayers && (
+                        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[900] flex flex-col items-center justify-center p-6 text-white animate-in zoom-in">
+                            <div className="glass-dark border border-cyan-500/30 p-6 rounded-[30px] max-w-sm w-full shadow-[0_0_40px_rgba(6,182,212,0.15)] relative">
+                                <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-center text-cyan-400">Roster Activo</h3>
+                                <p className="text-[9px] text-zinc-400 text-center uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Actualiza los nombres. El historial se conservará.</p>
+                                
+                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                    {tempPlayers.map((p, i) => {
+                                        const isFixed = i < 4; // Los primeros 4 no se editan
+                                        return (
+                                            <div key={i} className="relative">
+                                                <input 
+                                                    type="text"
+                                                    value={isFixed ? DEFAULT_PLAYERS[i] : p}
+                                                    disabled={isFixed}
+                                                    onChange={(e) => {
+                                                        if (isFixed) return;
+                                                        const newTemp = [...tempPlayers];
+                                                        newTemp[i] = e.target.value.toUpperCase();
+                                                        setTempPlayers(newTemp);
+                                                    }}
+                                                    className={`w-full bg-[#0f172a] border border-white/10 rounded-xl px-3 py-3 text-white font-bold uppercase text-xs focus:border-cyan-400 focus:outline-none transition-colors shadow-inner text-center ${isFixed ? 'opacity-50 cursor-not-allowed' : 'focus:bg-slate-800'}`}
+                                                    placeholder={`Slot ${i+1}`}
+                                                    maxLength="12"
+                                                />
+                                                {/* Ícono de candado para los titulares */}
+                                                {isFixed && (
+                                                    <i className="fa-solid fa-lock absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-[10px]"></i>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setIsEditingPlayers(false)} className="flex-1 py-4 rounded-xl font-bold uppercase text-xs btn-3d btn-off">Cancelar</button>
+                                    <button onClick={savePlayers} className="flex-1 py-4 rounded-xl font-black uppercase text-xs btn-3d btn-cyan shadow-[0_0_15px_rgba(6,182,212,0.4)]">Guardar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* POPUP PRE-PARTIDO (FRENTE A FRENTE DE HOY) */}
                     {showH2HPopup && (() => {
                         const dailyStats = getDailyH2H();
@@ -440,7 +537,7 @@
                                     
                                     <div className="flex w-full items-center justify-between mb-10 gap-4">
                                         <div className="flex-1 flex flex-col items-center">
-                                            <h3 className="text-cyan-400 font-black text-xl mb-2">{p1}</h3>
+                                            <h3 className="text-cyan-400 font-black text-xl mb-2 text-center">{p1}</h3>
                                             <div className="w-16 h-16 rounded-2xl bg-cyan-900/50 border border-cyan-500/50 flex items-center justify-center text-3xl font-digital text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
                                                 {dailyStats.p1Wins}
                                             </div>
@@ -449,7 +546,7 @@
                                         <div className="text-zinc-600 font-black italic text-2xl">VS</div>
                                         
                                         <div className="flex-1 flex flex-col items-center">
-                                            <h3 className="text-fuchsia-400 font-black text-xl mb-2">{p2}</h3>
+                                            <h3 className="text-fuchsia-400 font-black text-xl mb-2 text-center">{p2}</h3>
                                             <div className="w-16 h-16 rounded-2xl bg-fuchsia-900/50 border border-fuchsia-500/50 flex items-center justify-center text-3xl font-digital text-fuchsia-300 shadow-[0_0_15px_rgba(217,70,239,0.3)]">
                                                 {dailyStats.p2Wins}
                                             </div>
@@ -461,7 +558,6 @@
                                             ¡A JUGAR!
                                         </button>
                                         
-                                        {/* BOTÓN PARA RESETEAR EL CONTADOR DE HOY */}
                                         <button onClick={resetDailyCounter} className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest hover:text-rose-400 transition-colors flex items-center justify-center gap-2 pt-1 pb-2">
                                             <i className="fa-solid fa-eraser"></i> Borrar Marcador de Hoy
                                         </button>
@@ -503,8 +599,7 @@
                         const wins = pMatches.filter(m => m.winner === selectedPlayerStats).length;
                         const losses = pMatches.length - wins;
 
-                        // Historial de Rivalidades All-Time
-                        const opponentsStats = JUGADORES.filter(n => n !== selectedPlayerStats).map(opp => {
+                        const opponentsStats = players.filter(n => n !== selectedPlayerStats).map(opp => {
                             const h2hMatches = pMatches.filter(m => m.player1 === opp || m.player2 === opp);
                             if (h2hMatches.length === 0) return null;
                             const oppWins = h2hMatches.filter(m => m.winner === selectedPlayerStats).length;
