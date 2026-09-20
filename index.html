@@ -97,8 +97,8 @@
                     // Si no estamos en la pantalla del partido o hay un menú abierto, lo ignoramos
                     if (view !== 'match' || winner || showResetConfirm) return;
 
-                    // Evita que la pantalla de la tablet se mueva hacia arriba o abajo
-                    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','PageUp','PageDown'].includes(e.key)) {
+                    // Evita que la pantalla de la tablet se mueva o suba el volumen de forma predeterminada (si el SO lo permite)
+                    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','PageUp','PageDown','AudioVolumeUp','AudioVolumeDown'].includes(e.key)) {
                         e.preventDefault();
                     }
 
@@ -117,15 +117,19 @@
                             if (!isPaused) addPoint(2);
                             break;
                             
-                        // BOTÓN ABAJO (Scroll Down) -> Deshace el último punto
+                        // BOTÓN ABAJO -> Deshace el último punto (Ahora incluye Subir Volumen)
                         case 'ArrowDown':
                         case 'PageDown':
+                        case 'AudioVolumeUp': // <-- Agregado aquí
+                        case 'VolumeUp':
                             if (!isPaused) undo();
                             break;
 
-                        // BOTÓN ARRIBA (Scroll Up) -> Lanza el tiempo fuera (Timeout)
+                        // BOTÓN ARRIBA -> Lanza el tiempo fuera (Timeout) (Ahora incluye Bajar Volumen)
                         case 'ArrowUp':
                         case 'PageUp':
+                        case 'AudioVolumeDown': // <-- Agregado por precaución
+                        case 'VolumeDown':
                             if (!isPaused) startTimeout();
                             break;
 
