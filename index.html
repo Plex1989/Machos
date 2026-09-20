@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MACHO'S ALPHA | Umpire Pro v5.0</title>
+    <title>MACHO'S ALPHA | Umpire Pro v6.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -33,63 +33,43 @@
         
         .font-digital { font-family: 'Orbitron', sans-serif; }
         
-        /* ==========================================
-           SISTEMA DE BOTONES 3D SÓLIDOS
-           ========================================== */
+        /* SISTEMA DE BOTONES 3D SÓLIDOS */
         .btn-3d {
             position: relative;
             margin-bottom: 4px;
             transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s;
         }
-        .btn-3d:active { 
-            transform: translateY(4px) !important; 
-        }
+        .btn-3d:active { transform: translateY(4px) !important; }
         
-        /* Botón Apagado / Standby */
         .btn-off { background-color: #1e293b; box-shadow: 0 4px 0 #0f172a; color: #94a3b8; }
         .btn-off:active { box-shadow: 0 0px 0 #0f172a !important; }
         
-        /* Botón Jugador 1 (Cyan) */
         .btn-cyan { background-color: #06b6d4; box-shadow: 0 4px 0 #164e63, 0 0 15px rgba(6,182,212, 0.5); color: white; }
         .btn-cyan:active { box-shadow: 0 0px 0 #164e63, 0 0 5px rgba(6,182,212, 0.5) !important; }
         
-        /* Botón Jugador 2 (Fuchsia) */
         .btn-fuchsia { background-color: #d946ef; box-shadow: 0 4px 0 #701a75, 0 0 15px rgba(217,70,239, 0.5); color: white; }
         .btn-fuchsia:active { box-shadow: 0 0px 0 #701a75, 0 0 5px rgba(217,70,239, 0.5) !important; }
         
-        /* Botón Blanco (Principal) */
         .btn-white { background-color: #f8fafc; box-shadow: 0 4px 0 #94a3b8, 0 0 15px rgba(255,255,255, 0.3); color: #0f172a; }
         .btn-white:active { box-shadow: 0 0px 0 #94a3b8, 0 0 5px rgba(255,255,255, 0.3) !important; }
         
-        /* Botón Naranja (Pausa) */
         .btn-orange { background-color: #f97316; box-shadow: 0 4px 0 #9a3412, 0 0 15px rgba(249,115,22, 0.4); color: white; }
         .btn-orange:active { box-shadow: 0 0px 0 #9a3412, 0 0 5px rgba(249,115,22, 0.4) !important; }
 
-        /* Botón Rojo (Apagar) */
         .btn-red { background-color: #e11d48; box-shadow: 0 4px 0 #881337, 0 0 15px rgba(225,29,72, 0.4); color: white; }
         .btn-red:active { box-shadow: 0 0px 0 #881337, 0 0 5px rgba(225,29,72, 0.4) !important; }
 
-        /* ==========================================
-           MARCADORES GIGANTES 3D (Pantalla de Juego)
-           ========================================== */
-        .card-score {
-            background-color: #0f172a; /* Slate 900 */
-            margin-bottom: 8px;
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
-        }
+        /* MARCADORES GIGANTES 3D */
+        .card-score { background-color: #0f172a; margin-bottom: 8px; transition: transform 0.1s ease, box-shadow 0.1s ease; }
         .card-score:active { transform: translateY(8px); }
-        
         .score-p1 { border-top: 2px solid #06b6d4; box-shadow: 0 8px 0 #020617, 0 0 20px rgba(6,182,212,0.15); }
         .score-p1:active { box-shadow: 0 0px 0 #020617, 0 0 10px rgba(6,182,212,0.15) !important; }
-        
         .score-p2 { border-top: 2px solid #d946ef; box-shadow: 0 8px 0 #020617, 0 0 20px rgba(217,70,239,0.15); }
         .score-p2:active { box-shadow: 0 0px 0 #020617, 0 0 10px rgba(217,70,239,0.15) !important; }
 
-        /* Nombres arriba del marcador en 3D */
         .name-p1 { background-color: #0891b2; box-shadow: 0 6px 0 #164e63, 0 0 15px rgba(6,182,212,0.4); margin-bottom: 6px; }
         .name-p2 { background-color: #c026d3; box-shadow: 0 6px 0 #701a75, 0 0 15px rgba(217,70,239,0.4); margin-bottom: 6px; }
         
-        /* Glass panel genérico para fondos ligeros */
         .glass-dark { background: rgba(15, 17, 26, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
     </style>
 </head>
@@ -130,6 +110,7 @@
             const [isTimeoutActive, setIsTimeoutActive] = useState(false);
             const [isPaused, setIsPaused] = useState(false);
             const [showResetConfirm, setShowResetConfirm] = useState(false);
+            const [showH2HPopup, setShowH2HPopup] = useState(false); // NUEVO ESTADO PARA POPUP PRE-PARTIDO
             const [isMuted, setIsMuted] = useState(false); 
             
             const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
@@ -223,7 +204,6 @@
                     });
                 }
             }, [view]);
-            // ==========================================
 
             const announceScore = (s1, s2, isWin = false, winName = "") => {
                 if (isMuted || !window.speechSynthesis) return;
@@ -314,8 +294,10 @@
                 setSwapped(false); 
             };
 
+            // MODIFICADO: Ahora el botón de setup abre el popup, y el popup ejecuta esto
             const startMatchWithAudio = () => {
                 resetMatch(); 
+                setShowH2HPopup(false);
                 setView('match');
                 const audio = document.getElementById('silentAudio');
                 if (audio) { audio.play().catch(e => console.log(e)); }
@@ -339,6 +321,20 @@
                     return { name, wins, total: pMatches.length, rate: pMatches.length ? (wins/pMatches.length)*100 : 0 };
                 }).sort((a,b) => b.rate - a.rate || b.wins - a.wins);
             }, [matches]);
+
+            // CALCULAR FRENTE A FRENTE DEL DÍA (Para el Popup)
+            const getDailyH2H = () => {
+                if (!p1 || !p2) return { p1Wins: 0, p2Wins: 0 };
+                const today = new Date().toDateString();
+                const dailyMatches = matches.filter(m => 
+                    ((m.player1 === p1 && m.player2 === p2) || (m.player1 === p2 && m.player2 === p1)) &&
+                    new Date(m.timestamp).toDateString() === today
+                );
+                return {
+                    p1Wins: dailyMatches.filter(m => m.winner === p1).length,
+                    p2Wins: dailyMatches.filter(m => m.winner === p2).length
+                };
+            };
 
             return (
                 <div className="select-none min-h-screen text-slate-100 flex flex-col touch-manipulation">
@@ -374,52 +370,37 @@
                             </header>
 
                             <div className="space-y-8 relative z-10">
-                                {/* JUGADOR 1 */}
                                 <div>
                                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 1</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         {JUGADORES.map(n => 
-                                            <button 
-                                                key={n} 
-                                                onClick={() => setP1(n)} 
-                                                className={`py-4 rounded-xl font-bold text-xs btn-3d ${p1 === n ? 'btn-cyan' : 'btn-off hover:bg-slate-700 hover:text-white'}`}
-                                            >
+                                            <button key={n} onClick={() => setP1(n)} className={`py-4 rounded-xl font-bold text-xs btn-3d ${p1 === n ? 'btn-cyan' : 'btn-off hover:bg-slate-700 hover:text-white'}`}>
                                                 {n}
                                             </button>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* JUGADOR 2 */}
                                 <div>
                                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-3 ml-2">Selecciona Jugador 2</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         {JUGADORES.map(n => 
-                                            <button 
-                                                key={n} 
-                                                onClick={() => setP2(n)} 
-                                                className={`py-4 rounded-xl font-bold text-xs btn-3d ${p2 === n ? 'btn-fuchsia' : 'btn-off hover:bg-slate-700 hover:text-white'}`}
-                                            >
+                                            <button key={n} onClick={() => setP2(n)} className={`py-4 rounded-xl font-bold text-xs btn-3d ${p2 === n ? 'btn-fuchsia' : 'btn-off hover:bg-slate-700 hover:text-white'}`}>
                                                 {n}
                                             </button>
                                         )}
                                     </div>
                                 </div>
                                 
-                                {/* MODO DE JUEGO */}
                                 <div className="flex gap-3 mt-8">
                                     {['2-3', '3-5', '1-15'].map(m => 
-                                        <button 
-                                            key={m} 
-                                            onClick={() => setMode(m)} 
-                                            className={`flex-1 py-3 rounded-xl font-bold text-[10px] tracking-widest uppercase btn-3d ${mode === m ? 'btn-white' : 'btn-off hover:bg-slate-700 hover:text-white'}`}
-                                        >
+                                        <button key={m} onClick={() => setMode(m)} className={`flex-1 py-3 rounded-xl font-bold text-[10px] tracking-widest uppercase btn-3d ${mode === m ? 'btn-white' : 'btn-off hover:bg-slate-700 hover:text-white'}`}>
                                             {m === '2-3' ? '2 DE 3' : m === '3-5' ? '3 DE 5' : '1 A 15'}
                                         </button>
                                     )}
                                 </div>
 
-                                <button disabled={!p1 || !p2 || p1 === p2} onClick={startMatchWithAudio} className="w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm btn-3d btn-white mt-6 disabled:opacity-30 disabled:shadow-none">
+                                <button disabled={!p1 || !p2 || p1 === p2} onClick={() => setShowH2HPopup(true)} className="w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm btn-3d btn-white mt-6 disabled:opacity-30 disabled:shadow-none">
                                     Comenzar Duelo
                                 </button>
                                 
@@ -430,8 +411,44 @@
                         </div>
                     )}
 
+                    {/* POPUP PRE-PARTIDO (FRENTE A FRENTE DE HOY) */}
+                    {showH2HPopup && (() => {
+                        const dailyStats = getDailyH2H();
+                        return (
+                            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[800] flex flex-col items-center justify-center p-6 text-white animate-in zoom-in">
+                                <div className="glass-dark border border-white/10 p-8 rounded-[30px] max-w-sm w-full flex flex-col items-center shadow-[0_0_40px_rgba(6,182,212,0.15)] relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-fuchsia-500"></div>
+                                    
+                                    <p className="text-zinc-400 font-bold uppercase tracking-[0.4em] text-[10px] mb-6">Enfrentamiento de Hoy</p>
+                                    
+                                    <div className="flex w-full items-center justify-between mb-8 gap-4">
+                                        <div className="flex-1 flex flex-col items-center">
+                                            <h3 className="text-cyan-400 font-black text-xl mb-2">{p1}</h3>
+                                            <div className="w-16 h-16 rounded-2xl bg-cyan-900/50 border border-cyan-500/50 flex items-center justify-center text-3xl font-digital text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                                                {dailyStats.p1Wins}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="text-zinc-600 font-black italic text-2xl">VS</div>
+                                        
+                                        <div className="flex-1 flex flex-col items-center">
+                                            <h3 className="text-fuchsia-400 font-black text-xl mb-2">{p2}</h3>
+                                            <div className="w-16 h-16 rounded-2xl bg-fuchsia-900/50 border border-fuchsia-500/50 flex items-center justify-center text-3xl font-digital text-fuchsia-300 shadow-[0_0_15px_rgba(217,70,239,0.3)]">
+                                                {dailyStats.p2Wins}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button onClick={startMatchWithAudio} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm btn-3d btn-cyan">
+                                        ¡A JUGAR!
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    })()}
+
                     {/* ==========================================
-                        PANTALLA DE RANKING
+                        PANTALLA DE RANKING Y ESTADÍSTICAS GLOBALES
                         ========================================== */}
                     {view === 'ranking' && (
                         <div className="p-6 pb-20 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar h-screen">
@@ -456,21 +473,33 @@
                         </div>
                     )}
 
-                    {/* MODAL DE ESTADÍSTICAS DEL JUGADOR */}
+                    {/* MODAL DE ESTADÍSTICAS DEL JUGADOR Y RIVALIDADES */}
                     {selectedPlayerStats && (() => {
                         const pMatches = matches.filter(m => m.player1 === selectedPlayerStats || m.player2 === selectedPlayerStats).sort((a,b) => b.timestamp - a.timestamp);
                         const wins = pMatches.filter(m => m.winner === selectedPlayerStats).length;
                         const losses = pMatches.length - wins;
 
+                        // Calcular historial ALL-TIME contra cada rival
+                        const opponentsStats = JUGADORES.filter(n => n !== selectedPlayerStats).map(opp => {
+                            const h2hMatches = pMatches.filter(m => m.player1 === opp || m.player2 === opp);
+                            if (h2hMatches.length === 0) return null;
+                            const oppWins = h2hMatches.filter(m => m.winner === selectedPlayerStats).length;
+                            const oppLosses = h2hMatches.length - oppWins;
+                            return { name: opp, wins: oppWins, losses: oppLosses, total: h2hMatches.length };
+                        }).filter(Boolean).sort((a, b) => b.total - a.total); // Ordenar por los que más juega
+
                         return (
-                            <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[700] flex flex-col p-6 overflow-y-auto animate-in slide-in-from-bottom duration-300">
-                                <button onClick={() => setSelectedPlayerStats(null)} className="absolute top-6 right-6 w-12 h-12 btn-3d btn-off rounded-full flex items-center justify-center text-white">
+                            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[700] flex flex-col p-6 overflow-y-auto animate-in slide-in-from-bottom duration-300 hide-scrollbar">
+                                <button onClick={() => setSelectedPlayerStats(null)} className="absolute top-6 right-6 w-12 h-12 btn-3d btn-off rounded-full flex items-center justify-center text-white z-50">
                                     <i className="fa-solid fa-xmark text-xl"></i>
                                 </button>
-                                <h2 className="text-4xl font-black italic text-white uppercase mt-16 mb-2 tracking-widest">{selectedPlayerStats}</h2>
-                                <p className="text-cyan-400 font-bold tracking-[0.2em] text-[10px] uppercase mb-8">Estadísticas</p>
                                 
-                                <div className="flex gap-4 mb-8">
+                                <div className="mt-16 mb-8">
+                                    <h2 className="text-4xl font-black italic text-white uppercase tracking-widest">{selectedPlayerStats}</h2>
+                                    <p className="text-cyan-400 font-bold tracking-[0.2em] text-[10px] uppercase mt-1">Global All-Time</p>
+                                </div>
+                                
+                                <div className="flex gap-4 mb-10 shrink-0">
                                     <div className="flex-1 btn-3d btn-cyan rounded-[20px] p-5 text-center">
                                         <p className="text-[9px] text-cyan-100 font-bold uppercase tracking-widest mb-2">Victorias</p>
                                         <p className="text-4xl font-black text-white font-digital">{wins}</p>
@@ -479,6 +508,36 @@
                                         <p className="text-[9px] text-fuchsia-100 font-bold uppercase tracking-widest mb-2">Derrotas</p>
                                         <p className="text-4xl font-black text-white font-digital">{losses}</p>
                                     </div>
+                                </div>
+
+                                {/* SECCIÓN RIVALIDADES (NUEVO) */}
+                                <div>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Rivalidades (Siempre)</p>
+                                    
+                                    {opponentsStats.length === 0 ? (
+                                        <p className="text-zinc-600 text-xs text-center italic py-4">Aún no hay enfrentamientos registrados.</p>
+                                    ) : (
+                                        <div className="space-y-3 pb-8">
+                                            {opponentsStats.map(opp => (
+                                                <div key={opp.name} className="glass-dark border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] text-zinc-500 font-bold tracking-widest mb-1">VS</span>
+                                                        <span className="font-bold text-white uppercase tracking-widest">{opp.name}</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <div className="bg-cyan-900/40 border border-cyan-500/30 px-3 py-2 rounded-lg text-center min-w-[50px]">
+                                                            <span className="block text-[8px] text-cyan-400 font-bold mb-1">WIN</span>
+                                                            <span className="font-digital text-white font-bold">{opp.wins}</span>
+                                                        </div>
+                                                        <div className="bg-fuchsia-900/40 border border-fuchsia-500/30 px-3 py-2 rounded-lg text-center min-w-[50px]">
+                                                            <span className="block text-[8px] text-fuchsia-400 font-bold mb-1">LOSE</span>
+                                                            <span className="font-digital text-white font-bold">{opp.losses}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )
@@ -490,7 +549,6 @@
                     {view === 'match' && (
                         <div className="fixed inset-0 flex flex-col z-50 bg-[#090a0f] overflow-hidden">
                             
-                            {/* TOP BAR */}
                             <div className="glass-dark py-3 px-6 flex justify-between items-center text-white shrink-0 z-20 border-b border-white/5">
                                 <button onClick={exitMatch} className="text-zinc-500 font-bold text-[9px] flex items-center gap-2 uppercase tracking-widest hover:text-white transition-colors">
                                     <i className="fa-solid fa-chevron-left"></i> Salir
@@ -503,10 +561,7 @@
 
                             <div className="flex-1 flex flex-col landscape:flex-row w-full p-3 landscape:p-6 gap-4 overflow-hidden min-h-0">
 
-                                {/* ================================= JUGADOR 1 ================================= */}
                                 <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${swapped ? 'order-3' : 'order-1'}`}>
-                                    
-                                    {/* Etiqueta de Nombre 3D */}
                                     <div className="name-p1 py-4 px-5 rounded-[20px] flex items-center justify-between shrink-0 relative overflow-hidden transition-transform">
                                         <div className="w-10 md:w-14"></div> 
                                         <div className="flex flex-col items-center">
@@ -520,13 +575,11 @@
                                         <div className="w-10 h-10 bg-black/20 border border-white/20 rounded-lg flex items-center justify-center text-white font-digital font-bold text-xl">{sets1}</div>
                                     </div>
 
-                                    {/* Marcador Gigante 3D */}
                                     <div onClick={() => addPoint(1)} className="flex-1 card-score score-p1 rounded-[30px] flex flex-col items-center justify-center relative cursor-pointer overflow-hidden min-h-0">
                                         <div className="text-white text-[25vh] landscape:text-[45vh] font-digital font-black leading-none tracking-tighter select-none" style={{ textShadow: '0 0 40px rgba(6,182,212,0.6)' }}>{score1}</div>
                                     </div>
                                 </div>
 
-                                {/* ================================= CONTROLES CENTRALES ================================= */}
                                 <div className="flex flex-row landscape:flex-col items-center justify-center gap-4 shrink-0 py-1 landscape:py-0 z-20">
                                     <button onClick={undo} className="w-12 h-12 landscape:w-14 landscape:h-14 rounded-full flex items-center justify-center btn-3d btn-off"><i className="fa-solid fa-rotate-left text-lg"></i></button>
                                     <button onClick={() => { saveState(); setSwapped(prev => !prev); }} className="w-12 h-12 landscape:w-14 landscape:h-14 rounded-full flex items-center justify-center btn-3d btn-off"><i className="fa-solid fa-shuffle text-lg"></i></button>
@@ -535,10 +588,7 @@
                                     <button onClick={() => setShowResetConfirm(true)} className="w-12 h-12 landscape:w-14 landscape:h-14 rounded-full flex items-center justify-center btn-3d btn-red"><i className="fa-solid fa-power-off text-lg"></i></button>
                                 </div>
 
-                                {/* ================================= JUGADOR 2 ================================= */}
                                 <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${swapped ? 'order-1' : 'order-3'}`}>
-                                    
-                                    {/* Etiqueta de Nombre 3D */}
                                     <div className="name-p2 py-4 px-5 rounded-[20px] flex items-center justify-between shrink-0 relative overflow-hidden transition-transform">
                                         <div className="w-10 h-10 bg-black/20 border border-white/20 rounded-lg flex items-center justify-center text-white font-digital font-bold text-xl">{sets2}</div>
                                         <div className="flex flex-col items-center">
@@ -552,7 +602,6 @@
                                         <div className="w-10 md:w-14"></div>
                                     </div>
 
-                                    {/* Marcador Gigante 3D */}
                                     <div onClick={() => addPoint(2)} className="flex-1 card-score score-p2 rounded-[30px] flex flex-col items-center justify-center relative cursor-pointer overflow-hidden min-h-0">
                                         <div className="text-white text-[25vh] landscape:text-[45vh] font-digital font-black leading-none tracking-tighter select-none" style={{ textShadow: '0 0 40px rgba(217,70,239,0.6)' }}>{score2}</div>
                                         <div className="absolute bottom-5 right-6 text-fuchsia-400/50 font-digital text-[10px] uppercase tracking-widest">TIME: {formatTime(matchTime)}</div>
@@ -560,9 +609,6 @@
                                 </div>
                             </div>
 
-                            {/* ==========================================
-                                MODALES DE JUEGO (PAUSA, RESET, GANADOR)
-                                ========================================== */}
                             {isTimeoutActive && (
                                 <div className="fixed inset-0 bg-black/90 backdrop-blur-lg z-[500] flex flex-col items-center justify-center p-10 text-white animate-in zoom-in">
                                     <i className="fa-solid fa-stopwatch text-5xl mb-8 text-orange-500"></i>
