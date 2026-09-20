@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MACHO'S ALPHA | Umpire Pro v6.0</title>
+    <title>MACHO'S ALPHA | Umpire Pro v6.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -110,7 +110,7 @@
             const [isTimeoutActive, setIsTimeoutActive] = useState(false);
             const [isPaused, setIsPaused] = useState(false);
             const [showResetConfirm, setShowResetConfirm] = useState(false);
-            const [showH2HPopup, setShowH2HPopup] = useState(false); // NUEVO ESTADO PARA POPUP PRE-PARTIDO
+            const [showH2HPopup, setShowH2HPopup] = useState(false); 
             const [isMuted, setIsMuted] = useState(false); 
             
             const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
@@ -294,7 +294,6 @@
                 setSwapped(false); 
             };
 
-            // MODIFICADO: Ahora el botón de setup abre el popup, y el popup ejecuta esto
             const startMatchWithAudio = () => {
                 resetMatch(); 
                 setShowH2HPopup(false);
@@ -322,18 +321,36 @@
                 }).sort((a,b) => b.rate - a.rate || b.wins - a.wins);
             }, [matches]);
 
-            // CALCULAR FRENTE A FRENTE DEL DÍA (Para el Popup)
+            // ==========================================
+            // LOGICA PARA FRENTE A FRENTE DIARIO
+            // ==========================================
             const getDailyH2H = () => {
                 if (!p1 || !p2) return { p1Wins: 0, p2Wins: 0 };
                 const today = new Date().toDateString();
                 const dailyMatches = matches.filter(m => 
                     ((m.player1 === p1 && m.player2 === p2) || (m.player1 === p2 && m.player2 === p1)) &&
-                    new Date(m.timestamp).toDateString() === today
+                    new Date(m.timestamp).toDateString() === today &&
+                    !m.hiddenFromDaily // Solo toma en cuenta los que NO han sido reseteados
                 );
                 return {
                     p1Wins: dailyMatches.filter(m => m.winner === p1).length,
                     p2Wins: dailyMatches.filter(m => m.winner === p2).length
                 };
+            };
+
+            const resetDailyCounter = () => {
+                const today = new Date().toDateString();
+                setMatches(prevMatches => {
+                    const updated = prevMatches.map(m => {
+                        const isMatchBetweenThem = (m.player1 === p1 && m.player2 === p2) || (m.player1 === p2 && m.player2 === p1);
+                        const isToday = new Date(m.timestamp).toDateString() === today;
+                        if (isMatchBetweenThem && isToday) {
+                            return { ...m, hiddenFromDaily: true }; // Se ocultan del popup, pero siguen existiendo en All-time
+                        }
+                        return m;
+                    });
+                    return updated;
+                });
             };
 
             return (
@@ -416,12 +433,12 @@
                         const dailyStats = getDailyH2H();
                         return (
                             <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[800] flex flex-col items-center justify-center p-6 text-white animate-in zoom-in">
-                                <div className="glass-dark border border-white/10 p-8 rounded-[30px] max-w-sm w-full flex flex-col items-center shadow-[0_0_40px_rgba(6,182,212,0.15)] relative overflow-hidden">
+                                <div className="glass-dark border border-white/10 p-8 pb-6 rounded-[30px] max-w-sm w-full flex flex-col items-center shadow-[0_0_40px_rgba(6,182,212,0.15)] relative overflow-hidden">
                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-fuchsia-500"></div>
                                     
-                                    <p className="text-zinc-400 font-bold uppercase tracking-[0.4em] text-[10px] mb-6">Enfrentamiento de Hoy</p>
+                                    <p className="text-zinc-400 font-bold uppercase tracking-[0.4em] text-[10px] mb-6 text-center">Enfrentamiento de Hoy</p>
                                     
-                                    <div className="flex w-full items-center justify-between mb-8 gap-4">
+                                    <div className="flex w-full items-center justify-between mb-10 gap-4">
                                         <div className="flex-1 flex flex-col items-center">
                                             <h3 className="text-cyan-400 font-black text-xl mb-2">{p1}</h3>
                                             <div className="w-16 h-16 rounded-2xl bg-cyan-900/50 border border-cyan-500/50 flex items-center justify-center text-3xl font-digital text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
@@ -439,16 +456,23 @@
                                         </div>
                                     </div>
                                     
-                                    <button onClick={startMatchWithAudio} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm btn-3d btn-cyan">
-                                        ¡A JUGAR!
-                                    </button>
+                                    <div className="w-full flex flex-col gap-4">
+                                        <button onClick={startMatchWithAudio} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm btn-3d btn-cyan">
+                                            ¡A JUGAR!
+                                        </button>
+                                        
+                                        {/* BOTÓN PARA RESETEAR EL CONTADOR DE HOY */}
+                                        <button onClick={resetDailyCounter} className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest hover:text-rose-400 transition-colors flex items-center justify-center gap-2 pt-1 pb-2">
+                                            <i className="fa-solid fa-eraser"></i> Borrar Marcador de Hoy
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )
                     })()}
 
                     {/* ==========================================
-                        PANTALLA DE RANKING Y ESTADÍSTICAS GLOBALES
+                        PANTALLA DE RANKING
                         ========================================== */}
                     {view === 'ranking' && (
                         <div className="p-6 pb-20 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar h-screen">
@@ -479,14 +503,14 @@
                         const wins = pMatches.filter(m => m.winner === selectedPlayerStats).length;
                         const losses = pMatches.length - wins;
 
-                        // Calcular historial ALL-TIME contra cada rival
+                        // Historial de Rivalidades All-Time
                         const opponentsStats = JUGADORES.filter(n => n !== selectedPlayerStats).map(opp => {
                             const h2hMatches = pMatches.filter(m => m.player1 === opp || m.player2 === opp);
                             if (h2hMatches.length === 0) return null;
                             const oppWins = h2hMatches.filter(m => m.winner === selectedPlayerStats).length;
                             const oppLosses = h2hMatches.length - oppWins;
                             return { name: opp, wins: oppWins, losses: oppLosses, total: h2hMatches.length };
-                        }).filter(Boolean).sort((a, b) => b.total - a.total); // Ordenar por los que más juega
+                        }).filter(Boolean).sort((a, b) => b.total - a.total); 
 
                         return (
                             <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[700] flex flex-col p-6 overflow-y-auto animate-in slide-in-from-bottom duration-300 hide-scrollbar">
@@ -510,7 +534,6 @@
                                     </div>
                                 </div>
 
-                                {/* SECCIÓN RIVALIDADES (NUEVO) */}
                                 <div>
                                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Rivalidades (Siempre)</p>
                                     
