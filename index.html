@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MACHO'S ALPHA | Umpire Pro v2.2</title>
+    <title>MACHO'S ALPHA | Umpire Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -16,8 +16,6 @@
         body { background-color: black; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Debug bar */
-        #debug-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #C61A23; color: white; text-align: center; font-size: 10px; padding: 4px; z-index: 9999; font-family: monospace; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -30,8 +28,8 @@
 
         function App() {
             const [view, setView] = useState('setup'); 
-            const [debugKey, setDebugKey] = useState("ESPERANDO ANILLO v2.2...");
             
+            // CARGA DE HISTORIAL DE VICTORIAS
             const [matches, setMatches] = useState(() => {
                 const guardado = localStorage.getItem('machos_matches');
                 if (guardado) {
@@ -40,6 +38,7 @@
                 return [];
             });
             
+            // Estado Partido
             const [p1, setP1] = useState(null);
             const [p2, setP2] = useState(null);
             const [mode, setMode] = useState('2-3'); 
@@ -50,8 +49,11 @@
             const [winner, setWinner] = useState(null);
             const [history, setHistory] = useState([]); 
             const [servingFirst, setServingFirst] = useState(1); 
+            
+            // Estado para saber si los jugadores cambiaron de lado
             const [swapped, setSwapped] = useState(false);
             
+            // Timers & UI
             const [matchTime, setMatchTime] = useState(0);
             const [gameTime, setGameTime] = useState(0);
             const [timeoutSeconds, setTimeoutSeconds] = useState(0);
@@ -60,15 +62,18 @@
             const [showResetConfirm, setShowResetConfirm] = useState(false);
             const [isMuted, setIsMuted] = useState(false); 
             
+            // Estado para el panel de estadísticas del jugador
             const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
             
             const timerRef = useRef(null);
             const stateRef = useRef({});
 
+            // GUARDAR HISTORIAL CADA VEZ QUE HAY UN CAMBIO
             useEffect(() => {
                 localStorage.setItem('machos_matches', JSON.stringify(matches));
             }, [matches]);
 
+            // CRONÓMETROS
             useEffect(() => {
                 if (view === 'match' && !winner && !isPaused && !showResetConfirm) {
                     timerRef.current = setInterval(() => {
@@ -85,28 +90,26 @@
                 return () => clearInterval(timerRef.current);
             }, [view, winner, isTimeoutActive, isPaused, showResetConfirm]);
 
+
             // ==========================================
-            // CONTROL BLUETOOTH AVANZADO v2.2
+            // CONTROL BLUETOOTH / ANILLO
             // ==========================================
             useEffect(() => {
                 stateRef.current = { view, isPaused, addPoint, undo, startTimeout, winner, showResetConfirm };
             });
 
             useEffect(() => {
-                // 1. TRAMPA BOTÓN ATRÁS: Solo bloquea la salida, ya no deshace puntos para evitar problemas.
+                // TRAMPA BOTÓN ATRÁS: Solo bloquea la salida para no cerrar la app por accidente.
                 const handlePopState = (e) => {
                     const { view, winner, showResetConfirm } = stateRef.current;
-                    setDebugKey("BLOQUEADO: INTENTO DE SALIR (BOTÓN ATRÁS)");
                     if (view === 'match' && !winner && !showResetConfirm) {
                         window.history.pushState({ inMatch: true }, ""); 
                     }
                 };
                 window.addEventListener('popstate', handlePopState);
 
-                // 2. DETECTOR DE TECLAS Y ANILLO
                 const handleKeyDown = (e) => {
                     const { view, isPaused, addPoint, undo, startTimeout, winner, showResetConfirm } = stateRef.current;
-                    setDebugKey(`TECLA: ${e.key} | CÓDIGO: ${e.code}`);
 
                     if (view !== 'match' || winner || showResetConfirm) return;
 
@@ -115,19 +118,19 @@
                     }
 
                     switch(e.key) {
-                        // Flecha Izquierda: Punto P1
+                        // Un toque Izquierda (Regresar canción)
                         case 'ArrowLeft': case 'MediaTrackPrevious': case 'MediaRewind':
                             if (!isPaused) addPoint(1); break;
                         
-                        // Flecha Derecha: Punto P2
+                        // Un toque Derecha (Adelantar canción)
                         case 'ArrowRight': case 'MediaTrackNext': case 'MediaFastForward':
                             if (!isPaused) addPoint(2); break;
                         
-                        // Botón Medio (Play/Pause/Espacio): AHORA ES DESHACER PUNTO (Undo)
-                        case 'MediaPlayPause': case 'Pause': case 'Enter': case ' ':
+                        // Doble toque Derecha / Botón Central (Pausa / Play) -> AHORA ES DESHACER
+                        case 'MediaPlayPause': case 'Pause': case 'Play': case 'Enter': case ' ':
                             if (!isPaused) undo(); break;
                             
-                        // Botón Arriba: Tiempo Fuera
+                        // Scroll Arriba (Volumen Abajo) -> Tiempo Fuera
                         case 'ArrowUp': case 'PageUp':
                             if (!isPaused) startTimeout(); break;
                     }
@@ -140,34 +143,26 @@
                 };
             }, []);
 
-            // 3. SECUESTRO MEDIA SESSION (Para Android)
+            // ENGAÑAR A ANDROID PARA QUE USE ESTA APP EN LUGAR DE YOUTUBE MUSIC
             useEffect(() => {
                 if (view === 'match' && 'mediaSession' in navigator) {
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: 'Torneo Activo',
-                        artist: 'Macho\'s Alpha',
-                        album: 'Marcador'
-                    });
+                    navigator.mediaSession.metadata = new MediaMetadata({ title: 'Torneo Activo', artist: 'Macho\'s Alpha Umpire' });
                     
                     navigator.mediaSession.setActionHandler('previoustrack', () => {
-                        setDebugKey("MEDIA: PREV (PUNTO 1)");
                         const { isPaused, addPoint } = stateRef.current;
                         if (!isPaused) addPoint(1);
                     });
                     navigator.mediaSession.setActionHandler('nexttrack', () => {
-                        setDebugKey("MEDIA: NEXT (PUNTO 2)");
                         const { isPaused, addPoint } = stateRef.current;
                         if (!isPaused) addPoint(2);
                     });
                     
-                    // Ahora PLAY y PAUSE ejecutan UNDO
+                    // Doble toque (Play/Pause) ejecuta Deshacer
                     navigator.mediaSession.setActionHandler('play', () => {
-                        setDebugKey("MEDIA: PLAY -> DESHACER");
                         const { isPaused, undo } = stateRef.current;
                         if (!isPaused) undo();
                     });
                     navigator.mediaSession.setActionHandler('pause', () => {
-                        setDebugKey("MEDIA: PAUSE -> DESHACER");
                         const { isPaused, undo } = stateRef.current;
                         if (!isPaused) undo();
                     });
@@ -175,6 +170,8 @@
             }, [view]);
             // ==========================================
 
+
+            // SÍNTESIS DE VOZ NATIVA
             const announceScore = (s1, s2, isWin = false, winName = "") => {
                 if (isMuted || !window.speechSynthesis) return;
                 window.speechSynthesis.cancel(); 
@@ -185,6 +182,7 @@
                 window.speechSynthesis.speak(utterance);
             };
 
+            // LÓGICA DE JUEGO Y SAQUE
             const pointsToWin = mode === '1-15' ? 15 : 11;
             const setsNeeded = mode === '2-3' ? 2 : (mode === '3-5' ? 3 : 1);
 
@@ -253,6 +251,7 @@
                     localStorage.setItem('machos_matches', JSON.stringify(actualizado));
                     return actualizado;
                 });
+                
                 exitMatch();
             };
 
@@ -263,11 +262,12 @@
                 setSwapped(false); 
             };
 
+            // FUNCIONES DE ENTRADA Y SALIDA
             const startMatchWithAudio = () => {
                 resetMatch(); 
                 setView('match');
                 const audio = document.getElementById('silentAudio');
-                if (audio) { audio.play().catch(e => console.log("Audio block: ", e)); }
+                if (audio) { audio.play().catch(e => console.log(e)); }
                 window.history.pushState({ inMatch: true }, "");
             };
 
@@ -290,16 +290,16 @@
             }, [matches]);
 
             return (
-                <div className="font-sans select-none bg-black min-h-screen text-slate-100 flex flex-col touch-manipulation pb-8">
+                <div className="font-sans select-none bg-black min-h-screen text-slate-100 flex flex-col touch-manipulation">
                     
-                    <div id="debug-bar">{debugKey}</div>
+                    {/* Reproductor invisible para prioridad de Android */}
                     <audio id="silentAudio" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" loop playsInline preload="auto" style={{display: 'none'}}></audio>
 
                     {view === 'setup' && (
                         <div className="p-6 pb-24 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar">
                             <header className="text-center mb-8 pt-6">
                                 <h1 className="text-6xl font-black text-white italic tracking-tighter leading-none uppercase">MACHO'S<br/><span className="text-[#C61A23]">ALPHA</span></h1>
-                                <p className="text-zinc-500 text-[10px] font-bold tracking-[0.4em] mt-3 uppercase">Torneo de Ping Pong v2.2</p>
+                                <p className="text-zinc-500 text-[10px] font-bold tracking-[0.4em] mt-3 uppercase">Torneo de Ping Pong</p>
                             </header>
 
                             <div className="space-y-6">
@@ -331,6 +331,7 @@
                             <button onClick={() => setView('setup')} className="mb-8 text-zinc-500 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2"><i className="fa-solid fa-chevron-left"></i> Volver al Home</button>
                             <h2 className="text-4xl font-black italic mb-2 uppercase tracking-tighter text-white">MACHO'S ALPHA</h2>
                             <p className="text-[#C61A23] text-xs font-black tracking-widest mb-4 uppercase">Leaderboard Global</p>
+                            <p className="text-zinc-600 text-[9px] font-bold uppercase mb-8"><i className="fa-solid fa-hand-pointer mr-1"></i> Toca un jugador para ver su historial</p>
                             
                             <div className="space-y-3">
                                 {leaderboard.map((s, i) => (
@@ -363,8 +364,10 @@
                                 <button onClick={() => setSelectedPlayerStats(null)} className="absolute top-6 right-6 w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform">
                                     <i className="fa-solid fa-xmark text-xl"></i>
                                 </button>
+
                                 <h2 className="text-5xl font-black italic text-white uppercase mt-12 mb-2 tracking-tighter">{selectedPlayerStats}</h2>
                                 <p className="text-[#C61A23] font-black tracking-[0.3em] text-[10px] uppercase mb-8">Expediente de Batallas</p>
+
                                 <div className="flex gap-4 mb-8">
                                     <div className="flex-1 bg-zinc-900 rounded-[20px] p-5 text-center border border-white/5 shadow-lg">
                                         <p className="text-[10px] text-zinc-500 font-bold uppercase mb-2">Victorias</p>
@@ -375,57 +378,159 @@
                                         <p className="text-4xl font-black text-red-500">{losses}</p>
                                     </div>
                                 </div>
+
+                                <div className="bg-zinc-900 rounded-[30px] p-6 border border-white/5 flex-1 shadow-xl">
+                                    <h3 className="text-white font-black uppercase tracking-widest text-xs mb-6 border-b border-white/10 pb-4">Últimos Partidos</h3>
+                                    
+                                    <table className="w-full text-left text-xs">
+                                        <thead>
+                                            <tr className="text-zinc-500">
+                                                <th className="pb-4 font-bold uppercase tracking-widest text-[9px]">Fecha</th>
+                                                <th className="pb-4 font-bold uppercase tracking-widest text-[9px]">Rival</th>
+                                                <th className="pb-4 text-right font-bold uppercase tracking-widest text-[9px]">Resultado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pMatches.length === 0 ? (
+                                                <tr><td colSpan="3" className="py-8 text-center text-zinc-600 font-bold italic">Sin registros en la base de datos</td></tr>
+                                            ) : (
+                                                pMatches.map(m => {
+                                                    const isWin = m.winner === selectedPlayerStats;
+                                                    const rival = m.player1 === selectedPlayerStats ? m.player2 : m.player1;
+                                                    const dateStr = new Date(m.timestamp).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+                                                    
+                                                    return (
+                                                        <tr key={m.id} className="border-b border-white/5 last:border-0">
+                                                            <td className="py-4 font-mono text-zinc-400">{dateStr}</td>
+                                                            <td className="py-4 font-black text-white">{rival}</td>
+                                                            <td className="py-4 text-right">
+                                                                <span className={`px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest ${isWin ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                                    {isWin ? 'Victoria' : 'Derrota'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )
                     })()}
 
                     {view === 'match' && (
-                        <div className="fixed inset-0 bg-[#f2f2f2] flex flex-col z-50 overflow-hidden pb-8">
+                        <div className="fixed inset-0 bg-[#f2f2f2] flex flex-col z-50 overflow-hidden">
                             
                             <div className="bg-black py-2 px-4 flex justify-between items-center text-white shrink-0 shadow-md relative z-20">
                                 <button onClick={exitMatch} className="text-zinc-400 font-bold text-[10px] flex items-center gap-1 uppercase tracking-widest">
                                     <i className="fa-solid fa-chevron-left"></i> Salir
                                 </button>
-                                <span className="text-[10px] font-black italic tracking-widest text-zinc-500">MACHO'S ALPHA v2.2</span>
+                                <span className="text-[10px] font-black italic tracking-widest text-zinc-500">MACHO'S ALPHA</span>
                                 <button onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }} className={`text-zinc-400 p-2 rounded-full active:bg-zinc-800 transition-colors ${isMuted ? 'text-red-500' : ''}`}>
                                     {isMuted ? <i className="fa-solid fa-volume-xmark"></i> : <i className="fa-solid fa-volume-high"></i>}
                                 </button>
                             </div>
 
-                            <div className="flex-1 flex flex-col md:flex-row w-full p-2 md:p-4 gap-2 md:gap-4">
+                            {/* AGREGADO: landscape:flex-row para que siempre se ponga lado a lado al acostar el teléfono/tablet */}
+                            <div className="flex-1 flex flex-col landscape:flex-row md:flex-row w-full p-2 md:p-4 gap-2 md:gap-4">
+
                                 <div className={`flex-1 flex flex-col gap-2 md:gap-4 ${swapped ? 'order-3' : 'order-1'}`}>
                                     <div className="bg-[#C61A23] py-2 md:py-4 px-4 md:px-6 rounded-[20px] md:rounded-[30px] shadow-md flex items-center justify-between min-h-[70px] md:min-h-[100px] relative z-10 shrink-0">
                                         <div className="w-10 md:w-14"></div> 
                                         <div className="flex flex-col items-center">
                                             <h2 className="text-white text-center font-black text-4xl md:text-5xl tracking-tighter uppercase leading-none">{p1}</h2>
+                                            <div className="h-2 w-full flex justify-center gap-2 md:gap-3 mt-1 md:mt-2">
+                                                {currentServer === 1 && Array.from({length: servesRemaining}).map((_, i) => (
+                                                    <div key={i} className="h-1.5 md:h-2 w-8 md:w-10 bg-white rounded-full shadow-md animate-pulse"></div>
+                                                ))}
+                                            </div>
                                         </div>
                                         <div className="w-10 h-10 md:w-14 md:h-14 bg-black rounded-full flex items-center justify-center text-white font-black text-xl md:text-2xl border-4 border-white shadow-md">{sets1}</div>
                                     </div>
 
                                     <div onClick={() => addPoint(1)} className="flex-1 bg-black rounded-[30px] md:rounded-[40px] flex flex-col items-center justify-center relative shadow-lg active:scale-[0.98] transition-transform cursor-pointer overflow-hidden">
-                                        <div className="text-white text-[25vh] md:text-[25vw] font-bold leading-none tracking-tighter select-none">{score1}</div>
+                                        <button onClick={(e) => { e.stopPropagation(); setIsPaused(!isPaused); }} className="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 md:w-14 md:h-14 bg-zinc-800 rounded-full flex items-center justify-center text-white z-20">
+                                            {isPaused ? <i className="fa-solid fa-play text-xl"></i> : <i className="fa-solid fa-pause text-xl"></i>}
+                                        </button>
+                                        <div className="absolute top-5 right-16 md:top-8 md:right-24 text-white font-mono text-[9px] md:text-xs opacity-60 uppercase tracking-widest">MQ:0</div>
+                                        <div className="text-white text-[25vh] landscape:text-[20vw] md:text-[25vw] font-bold leading-none tracking-tighter select-none">{score1}</div>
+                                        <div className="absolute bottom-5 left-6 md:bottom-8 md:left-10 text-white font-mono text-[9px] md:text-xs opacity-60 uppercase tracking-widest">M: {formatTime(matchTime)}</div>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-row md:flex-col items-center justify-center py-2 md:py-0 px-2 md:px-0 gap-3 md:gap-6 order-2 shrink-0 z-20">
+                                {/* AGREGADO: landscape:flex-col para que los botones centrales se acomoden bonito */}
+                                <div className="flex flex-row landscape:flex-col md:flex-col items-center justify-center py-2 landscape:py-0 md:py-0 px-2 landscape:px-0 md:px-0 gap-3 landscape:gap-6 md:gap-6 order-2 shrink-0 z-20">
                                     <button onClick={undo} className="w-14 h-14 md:w-20 md:h-20 bg-[#E0E0E0] rounded-full flex items-center justify-center text-black shadow-md active:scale-90 transition-transform"><i className="fa-solid fa-rotate-left text-2xl md:text-3xl"></i></button>
-                                    <button onClick={() => { saveState(); setSwapped(prev => !prev); }} className="w-14 h-14 md:w-20 md:h-20 bg-[#E0E0E0] rounded-full flex items-center justify-center text-black shadow-md active:scale-90 transition-transform"><i className="fa-solid fa-shuffle text-2xl md:text-3xl"></i></button>
+                                    <button onClick={() => { saveState(); setSwapped(prev => !prev); }} className="w-14 h-14 md:w-20 md:h-20 bg-[#E0E0E0] rounded-full flex items-center justify-center text-black shadow-md active:scale-90 transition-transform">
+                                        <i className="fa-solid fa-shuffle text-2xl md:text-3xl"></i>
+                                    </button>
+                                    <button onClick={changeServe} className="w-14 h-14 md:w-20 md:h-20 bg-[#E0E0E0] rounded-full flex items-center justify-center text-black shadow-md active:scale-90 transition-transform"><i className="fa-solid fa-right-left text-2xl md:text-3xl"></i></button>
+                                    <button onClick={startTimeout} className="w-14 h-14 md:w-20 md:h-20 bg-[#C61A23] rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform"><i className="fa-solid fa-stopwatch text-2xl md:text-3xl"></i></button>
+                                    <button onClick={() => setShowResetConfirm(true)} className="w-14 h-14 md:w-20 md:h-20 bg-black rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform"><i className="fa-solid fa-arrow-rotate-right text-2xl md:text-3xl"></i></button>
                                 </div>
 
                                 <div className={`flex-1 flex flex-col gap-2 md:gap-4 ${swapped ? 'order-1' : 'order-3'}`}>
                                     <div className="order-2 md:order-1 bg-[#C61A23] py-2 md:py-4 px-4 md:px-6 rounded-[20px] md:rounded-[30px] shadow-md flex items-center justify-between min-h-[70px] md:min-h-[100px] relative z-10 shrink-0">
                                         <div className="w-10 h-10 md:w-14 md:h-14 bg-black rounded-full flex items-center justify-center text-white font-black text-xl md:text-2xl border-4 border-white shadow-md">{sets2}</div>
                                         <div className="flex flex-col items-center">
+                                            <div className="h-2 w-full flex justify-center gap-2 md:gap-3 mb-1 md:mt-0 order-2 md:order-1">
+                                                {currentServer === 2 && Array.from({length: servesRemaining}).map((_, i) => (
+                                                    <div key={i} className="h-1.5 md:h-2 w-8 md:w-10 bg-white rounded-full shadow-md animate-pulse"></div>
+                                                ))}
+                                            </div>
                                             <h2 className="text-white text-center font-black text-4xl md:text-5xl tracking-tighter uppercase leading-none order-1 md:order-2">{p2}</h2>
                                         </div>
                                         <div className="w-10 md:w-14"></div>
                                     </div>
 
                                     <div onClick={() => addPoint(2)} className="order-1 md:order-2 flex-1 bg-black rounded-[30px] md:rounded-[40px] flex flex-col items-center justify-center relative shadow-lg active:scale-[0.98] transition-transform cursor-pointer overflow-hidden">
-                                        <div className="text-white text-[25vh] md:text-[25vw] font-bold leading-none tracking-tighter select-none">{score2}</div>
+                                        <div className="absolute top-5 left-6 md:top-8 md:left-10 text-white font-mono text-[9px] md:text-xs opacity-60 uppercase tracking-widest">G1: {formatTime(gameTime)}</div>
+                                        <div className="text-white text-[25vh] landscape:text-[20vw] md:text-[25vw] font-bold leading-none tracking-tighter select-none">{score2}</div>
                                     </div>
                                 </div>
                             </div>
+
+                            {isTimeoutActive && (
+                                <div className="fixed inset-0 bg-[#C61A23]/98 backdrop-blur-md z-[500] flex flex-col items-center justify-center p-10 text-white animate-in zoom-in">
+                                    <i className="fa-solid fa-stopwatch text-6xl mb-6 opacity-90"></i>
+                                    <h3 className="text-3xl font-black uppercase tracking-[0.3em] mb-4">Tiempo Fuera</h3>
+                                    <div className="text-[20vh] md:text-[15vw] font-black leading-none tracking-tighter">{formatTime(timeoutSeconds)}</div>
+                                    <button onClick={() => setIsTimeoutActive(false)} className="mt-12 bg-white text-[#C61A23] px-16 py-6 rounded-full font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all text-xl">Reanudar Partido</button>
+                                </div>
+                            )}
+
+                            {showResetConfirm && (
+                                <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[500] flex flex-col items-center justify-center p-6 md:p-10 text-white animate-in zoom-in">
+                                    <i className="fa-solid fa-arrow-rotate-right text-6xl mb-8 opacity-90"></i>
+                                    <h3 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-4 text-center">¿Juego Nuevo?</h3>
+                                    <p className="text-zinc-400 text-center mb-12 max-w-md">El marcador actual se borrará por completo.</p>
+                                    <div className="flex flex-col md:flex-row gap-4 w-full max-w-md">
+                                        <button onClick={() => setShowResetConfirm(false)} className="flex-1 bg-zinc-800 text-white py-6 rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition-all">Cancelar</button>
+                                        <button onClick={resetMatch} className="flex-1 bg-[#C61A23] text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all">Reiniciar</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {isPaused && !isTimeoutActive && !winner && !showResetConfirm && (
+                                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex flex-col items-center justify-center">
+                                    <i className="fa-solid fa-pause text-7xl text-white mb-6 opacity-50"></i>
+                                    <h3 className="text-3xl font-black text-white uppercase tracking-widest mb-10">Partido Pausado</h3>
+                                    <button onClick={() => setIsPaused(false)} className="bg-[#C61A23] text-white px-12 py-5 rounded-full font-black uppercase tracking-widest">Continuar</button>
+                                </div>
+                            )}
+
+                            {winner && (
+                                <div className="fixed inset-0 bg-black/98 z-[600] flex flex-col items-center justify-center text-center p-6 md:p-10 animate-in zoom-in duration-500">
+                                <i className="fa-solid fa-crown text-9xl text-[#C61A23] mb-8"></i>
+                                <p className="text-[#C61A23] font-black uppercase tracking-[0.5em] text-[10px] md:text-xs mb-4">Ganador del Encuentro</p>
+                                <h2 className="text-[12vh] md:text-[10vw] font-black text-white mb-16 uppercase italic tracking-tighter leading-none">{winner}</h2>
+                                <div className="flex flex-col md:flex-row w-full gap-4 max-w-lg">
+                                    <button onClick={finalize} className="flex-1 bg-[#C61A23] text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">Finalizar y Guardar</button>
+                                    <button onClick={undo} className="flex-1 bg-zinc-900 text-white py-6 rounded-3xl font-bold uppercase tracking-widest text-[10px] md:text-xs border border-white/10 active:scale-95">Error, Seguir Jugando</button>
+                                </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
