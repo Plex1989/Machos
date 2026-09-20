@@ -50,7 +50,6 @@
             const [history, setHistory] = useState([]); 
             const [servingFirst, setServingFirst] = useState(1); 
             
-            // Estado para saber si los jugadores cambiaron de lado
             const [swapped, setSwapped] = useState(false);
             
             // Timers & UI
@@ -62,17 +61,16 @@
             const [showResetConfirm, setShowResetConfirm] = useState(false);
             const [isMuted, setIsMuted] = useState(false); 
             
-            // Estado para el panel de estadísticas del jugador
             const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
             
             const timerRef = useRef(null);
+            // Referencia para mantener el estado actualizado en los eventos del anillo
+            const stateRef = useRef({});
 
-            // GUARDAR HISTORIAL CADA VEZ QUE HAY UN CAMBIO
             useEffect(() => {
                 localStorage.setItem('machos_matches', JSON.stringify(matches));
             }, [matches]);
 
-            // CRONÓMETROS
             useEffect(() => {
                 if (view === 'match' && !winner && !isPaused && !showResetConfirm) {
                     timerRef.current = setInterval(() => {
@@ -93,62 +91,68 @@
             // CONTROL CON ANILLO BLUETOOTH / TECLADO
             // ==========================================
             useEffect(() => {
+                stateRef.current = { view, isPaused, addPoint, undo, startTimeout, winner, showResetConfirm };
+            });
+
+            useEffect(() => {
+                // 1. TRAMPA DEL BOTÓN "ATRÁS" (Para el botón de abajo)
+                const handlePopState = (e) => {
+                    const { view, isPaused, undo, winner, showResetConfirm } = stateRef.current;
+                    if (view === 'match' && !winner && !showResetConfirm) {
+                        if (!isPaused) undo(); // Ejecuta deshacer en lugar de salir
+                        // Vuelve a poner la trampa para que no salga en el siguiente clic
+                        window.history.pushState({ inMatch: true }, "");
+                    }
+                };
+                window.addEventListener('popstate', handlePopState);
+
+                // 2. CAPTURA DE TECLAS (Para teclas normales y de volumen)
                 const handleKeyDown = (e) => {
-                    // Si no estamos en la pantalla del partido o hay un menú abierto, lo ignoramos
+                    const { view, isPaused, addPoint, undo, startTimeout, winner, showResetConfirm } = stateRef.current;
                     if (view !== 'match' || winner || showResetConfirm) return;
 
-                    // Evita que la pantalla de la tablet se mueva o suba el volumen de forma predeterminada (si el SO lo permite)
                     if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','PageUp','PageDown','AudioVolumeUp','AudioVolumeDown'].includes(e.key)) {
                         e.preventDefault();
                     }
 
                     switch(e.key) {
-                        // BOTÓN IZQUIERDO (Regresar canción) -> Suma punto Jugador 1
-                        case 'ArrowLeft':
-                        case 'MediaTrackPrevious':
-                        case 'MediaRewind':
-                            if (!isPaused) addPoint(1);
-                            break;
-                            
-                        // BOTÓN DERECHO (Adelantar canción) -> Suma punto Jugador 2
-                        case 'ArrowRight':
-                        case 'MediaTrackNext':
-                        case 'MediaFastForward':
-                            if (!isPaused) addPoint(2);
-                            break;
-                            
-                        // BOTÓN ABAJO -> Deshace el último punto (Ahora incluye Subir Volumen)
-                        case 'ArrowDown':
-                        case 'PageDown':
-                        case 'AudioVolumeUp': // <-- Agregado aquí
-                        case 'VolumeUp':
-                            if (!isPaused) undo();
-                            break;
-
-                        // BOTÓN ARRIBA -> Lanza el tiempo fuera (Timeout) (Ahora incluye Bajar Volumen)
-                        case 'ArrowUp':
-                        case 'PageUp':
-                        case 'AudioVolumeDown': // <-- Agregado por precaución
-                        case 'VolumeDown':
-                            if (!isPaused) startTimeout();
-                            break;
-
-                        // DOBLE TOQUE (Play/Pause) -> Pausa o Reanuda el partido
-                        case 'MediaPlayPause':
-                        case 'Pause':
-                        case 'Enter':
-                        case ' ': // Espacio
-                            setIsPaused(prev => !prev);
-                            break;
+                        case 'ArrowLeft': case 'MediaTrackPrevious': case 'MediaRewind':
+                            if (!isPaused) addPoint(1); break;
+                        case 'ArrowRight': case 'MediaTrackNext': case 'MediaFastForward':
+                            if (!isPaused) addPoint(2); break;
+                        case 'ArrowDown': case 'PageDown': case 'AudioVolumeUp': case 'VolumeUp':
+                            if (!isPaused) undo(); break;
+                        case 'ArrowUp': case 'PageUp': case 'AudioVolumeDown': case 'VolumeDown':
+                            if (!isPaused) startTimeout(); break;
+                        case 'MediaPlayPause': case 'Pause': case 'Enter': case ' ':
+                            setIsPaused(prev => !prev); break;
                     }
                 };
-
                 window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }); 
+
+                return () => {
+                    window.removeEventListener('popstate', handlePopState);
+                    window.removeEventListener('keydown', handleKeyDown);
+                };
+            }, []);
+
+            // 3. SECUESTRO DE MEDIA SESSION (Evita que abra YouTube Music)
+            useEffect(() => {
+                if (view === 'match' && 'mediaSession' in navigator) {
+                    navigator.mediaSession.setActionHandler('previoustrack', () => {
+                        const { isPaused, addPoint } = stateRef.current;
+                        if (!isPaused) addPoint(1);
+                    });
+                    navigator.mediaSession.setActionHandler('nexttrack', () => {
+                        const { isPaused, addPoint } = stateRef.current;
+                        if (!isPaused) addPoint(2);
+                    });
+                    navigator.mediaSession.setActionHandler('play', () => setIsPaused(false));
+                    navigator.mediaSession.setActionHandler('pause', () => setIsPaused(true));
+                }
+            }, [view]);
             // ==========================================
 
-            // SÍNTESIS DE VOZ NATIVA
             const announceScore = (s1, s2, isWin = false, winName = "") => {
                 if (isMuted || !window.speechSynthesis) return;
                 window.speechSynthesis.cancel(); 
@@ -159,7 +163,6 @@
                 window.speechSynthesis.speak(utterance);
             };
 
-            // LÓGICA DE JUEGO Y SAQUE
             const pointsToWin = mode === '1-15' ? 15 : 11;
             const setsNeeded = mode === '2-3' ? 2 : (mode === '3-5' ? 3 : 1);
 
@@ -228,9 +231,8 @@
                     localStorage.setItem('machos_matches', JSON.stringify(actualizado));
                     return actualizado;
                 });
-
-                localStorage.removeItem('machos_partido_actual');
-                setView('setup');
+                
+                exitMatch();
             };
 
             const resetMatch = () => {
@@ -238,6 +240,26 @@
                 setHistory([]); setGameTime(0); setMatchTime(0); setIsTimeoutActive(false); 
                 setTimeoutSeconds(0); setIsPaused(false); setShowResetConfirm(false); setServingFirst(1);
                 setSwapped(false); 
+            };
+
+            // Función especial para iniciar partido y preparar los trucos de Android
+            const startMatchWithAudio = () => {
+                resetMatch(); 
+                setView('match');
+                
+                // Reproduce el audio silencioso para secuestrar los botones multimedia
+                const audio = document.getElementById('silentAudio');
+                if (audio) audio.play().catch(e => console.log("Audio block: ", e));
+                
+                // Pone la trampa para el botón de retroceso de Android
+                window.history.pushState({ inMatch: true }, "");
+            };
+
+            // Función para salir del partido
+            const exitMatch = () => {
+                const audio = document.getElementById('silentAudio');
+                if (audio) audio.pause();
+                setView('setup');
             };
 
             const startTimeout = () => { setTimeoutSeconds(120); setIsTimeoutActive(true); };
@@ -254,6 +276,10 @@
 
             return (
                 <div className="font-sans select-none bg-black min-h-screen text-slate-100 flex flex-col touch-manipulation">
+                    
+                    {/* Audio silencioso e invisible para secuestrar el control de música de Android */}
+                    <audio id="silentAudio" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" loop playsInline preload="auto" style={{display: 'none'}}></audio>
+
                     {view === 'setup' && (
                         <div className="p-6 pb-24 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar">
                             <header className="text-center mb-8 pt-6">
@@ -274,7 +300,7 @@
                                     {['2-3', '3-5', '1-15'].map(m => <button key={m} onClick={() => setMode(m)} className={`flex-1 py-4 rounded-xl font-bold text-[10px] transition-colors ${mode === m ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-500'}`}>{m === '1-15' ? '1 SET A 15' : `MEJOR DE ${m.split('-')[1]}`}</button>)}
                                 </div>
 
-                                <button disabled={!p1 || !p2 || p1 === p2} onClick={() => { resetMatch(); setView('match'); }} className="w-full bg-[#C61A23] py-6 rounded-2xl text-white font-black uppercase tracking-widest text-lg active:scale-95 transition-all mt-6 disabled:opacity-30 disabled:grayscale">
+                                <button disabled={!p1 || !p2 || p1 === p2} onClick={startMatchWithAudio} className="w-full bg-[#C61A23] py-6 rounded-2xl text-white font-black uppercase tracking-widest text-lg active:scale-95 transition-all mt-6 disabled:opacity-30 disabled:grayscale">
                                     Iniciar Partido
                                 </button>
                                 
@@ -382,7 +408,7 @@
                         <div className="fixed inset-0 bg-[#f2f2f2] flex flex-col z-50 overflow-hidden">
                             
                             <div className="bg-black py-2 px-4 flex justify-between items-center text-white shrink-0 shadow-md relative z-20">
-                                <button onClick={() => setView('setup')} className="text-zinc-400 font-bold text-[10px] flex items-center gap-1 uppercase tracking-widest">
+                                <button onClick={exitMatch} className="text-zinc-400 font-bold text-[10px] flex items-center gap-1 uppercase tracking-widest">
                                     <i className="fa-solid fa-chevron-left"></i> Salir
                                 </button>
                                 <span className="text-[10px] font-black italic tracking-widest text-zinc-500">MACHO'S ALPHA</span>
